@@ -4,9 +4,12 @@ import { Link } from "react-router-dom";
 import { FingerprintIcon, ShieldCheckIcon, UserIcon, MenuIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { UserMenu } from "@/components/auth/UserMenu";
 
 export const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user } = useAuth();
 
   return (
     <header className="w-full bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
@@ -36,12 +39,16 @@ export const Navbar = () => {
 
         {/* Authentication Button - Desktop */}
         <div className="hidden md:block">
-          <Link to="/auth">
-            <Button className="bg-vote-blue hover:bg-vote-teal transition-colors">
-              <UserIcon className="h-4 w-4 mr-2" />
-              Sign In to Vote
-            </Button>
-          </Link>
+          {user ? (
+            <UserMenu />
+          ) : (
+            <Link to="/auth">
+              <Button className="bg-vote-blue hover:bg-vote-teal transition-colors">
+                <UserIcon className="h-4 w-4 mr-2" />
+                Sign In to Vote
+              </Button>
+            </Link>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -94,16 +101,22 @@ export const Navbar = () => {
           >
             Verify Votes
           </Link>
-          <Link
-            to="/auth"
-            className="block"
-            onClick={() => setIsMobileMenuOpen(false)}
-          >
-            <Button className="w-full bg-vote-blue hover:bg-vote-teal">
-              <UserIcon className="h-4 w-4 mr-2" />
-              Sign In to Vote
-            </Button>
-          </Link>
+          {user ? (
+            <div className="px-4 py-2">
+              <UserMenu />
+            </div>
+          ) : (
+            <Link
+              to="/auth"
+              className="block"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <Button className="w-full bg-vote-blue hover:bg-vote-teal">
+                <UserIcon className="h-4 w-4 mr-2" />
+                Sign In to Vote
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </header>

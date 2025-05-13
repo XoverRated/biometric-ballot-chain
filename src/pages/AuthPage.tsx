@@ -1,10 +1,36 @@
 
 import { MainLayout } from "@/components/layout/MainLayout";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { RegisterForm } from "@/components/auth/RegisterForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FingerprintIcon, UserIcon, ShieldCheckIcon } from "lucide-react";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const AuthPage = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user && !loading) {
+      navigate("/elections");
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <FingerprintIcon className="h-16 w-16 text-vote-blue animate-pulse mx-auto mb-4" />
+            <p className="text-lg text-gray-600">Loading authentication...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       <div className="max-w-4xl mx-auto">
@@ -70,17 +96,7 @@ const AuthPage = () => {
                 <LoginForm />
               </TabsContent>
               <TabsContent value="register">
-                <div className="bg-white p-8 rounded-xl shadow-lg">
-                  <div className="text-center">
-                    <h2 className="text-2xl font-bold text-vote-blue">Registration</h2>
-                    <p className="text-gray-600 mt-2 mb-4">
-                      Registration is currently managed by election officials
-                    </p>
-                    <p className="text-gray-600">
-                      Please contact your local election office to register for the upcoming elections.
-                    </p>
-                  </div>
-                </div>
+                <RegisterForm />
               </TabsContent>
             </Tabs>
           </div>
