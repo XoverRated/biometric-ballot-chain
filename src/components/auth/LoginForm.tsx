@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2Icon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -87,7 +87,7 @@ export const LoginForm = () => {
 
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-500">
-          Don't have an account? <a href="#" className="text-vote-teal hover:underline">Register now</a>
+          Don't have an account? <a href="#" className="text-vote-teal hover:underline" onClick={() => document.querySelector('[data-value="register"]')?.click()}>Register now</a>
         </p>
       </div>
     </div>

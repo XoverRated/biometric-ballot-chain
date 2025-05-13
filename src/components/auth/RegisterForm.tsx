@@ -20,6 +20,8 @@ export const RegisterForm = () => {
     try {
       await signUp(email, password, fullName);
       // Registration success is handled in the auth context
+      // After registration, user will need to verify email
+      document.querySelector('[data-value="login"]')?.click();
     } catch (error) {
       // Error is already handled in the auth context
       console.error("Registration error:", error);
@@ -97,7 +99,7 @@ export const RegisterForm = () => {
 
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-500">
-          Already have an account? <a href="#" className="text-vote-teal hover:underline">Sign in</a>
+          Already have an account? <a href="#" className="text-vote-teal hover:underline" onClick={() => document.querySelector('[data-value="login"]')?.click()}>Sign in</a>
         </p>
       </div>
     </div>
