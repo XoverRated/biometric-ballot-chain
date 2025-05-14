@@ -55,6 +55,11 @@ export const Footer = () => {
                   Verify Votes
                 </Link>
               </li>
+              <li>
+                <Link to="/about-us" className="text-gray-300 hover:text-white transition-colors">
+                  About Us
+                </Link>
+              </li>
             </ul>
           </div>
 
