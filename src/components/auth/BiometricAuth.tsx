@@ -120,8 +120,8 @@ export const BiometricAuth = () => {
       setError("No biometric credential found for this user. Please ensure you have registered biometrics.");
       toast({
         title: "No Biometric Credential",
-        description: "Please register biometrics first. You might be redirected.",
-        variant: "warning",
+        description: "Please register biometrics first. You might be redirected to registration if this persists.",
+        variant: "default",
       });
       // Optionally navigate to registration or provide guidance
       // For now, we'll just show the error and let the user decide.
