@@ -32,6 +32,14 @@ export const LoginForm = () => {
     }
   };
 
+  const handleRegisterClick = () => {
+    // Find the register tab and switch to it
+    const registerTab = document.querySelector('[data-value="register"]') as HTMLElement;
+    if (registerTab) {
+      registerTab.click();
+    }
+  };
+
   return (
     <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
       <div className="text-center mb-6">
@@ -87,7 +95,7 @@ export const LoginForm = () => {
 
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-500">
-          Don't have an account? <a href="#" className="text-vote-teal hover:underline" onClick={() => document.querySelector('[data-value="register"]')?.click()}>Register now</a>
+          Don't have an account? <a href="#" className="text-vote-teal hover:underline" onClick={handleRegisterClick}>Register now</a>
         </p>
       </div>
     </div>
