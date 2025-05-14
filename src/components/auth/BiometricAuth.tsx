@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -20,223 +19,7 @@ const base64ToBuffer = (base64: string): ArrayBuffer => {
   return bytes.buffer;
 };
 
-export const BiometricAuth = () => {
-  const [isScanning, setIsScanning] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [biometricsAvailable, setBiometricsAvailable] = useState<boolean | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const { user } = useAuth();
-
-  useEffect(() => {
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
-    
-    // Check if WebAuthn is supported in this browser
-    checkBiometricSupport();
-  }, [user, navigate]);
-
-  const checkBiometricSupport = async () => {
-    try {
-      if (!window.PublicKeyCredential) {
-        console.log("WebAuthn is not supported by this browser.");
-        setBiometricsAvailable(false);
-        return;
-      }
-
-      // Check if user's device supports biometric authentication
-      const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-      console.log("Biometrics available:", available);
-      setBiometricsAvailable(available);
-      
-      if (!available) {
-        setError("Your device doesn't support biometric authentication.");
-      }
-    } catch (err) {
-      console.error("Error checking biometric support:", err);
-      setBiometricsAvailable(false);
-      setError("Could not determine if biometrics are supported.");
-    }
-  };
-
-  const handleStartScan = async () => {
-    setIsScanning(true);
-    setProgress(0);
-    setError(null);
-    
-    // Simulate progress while authenticating
-    const interval = setInterval(() => {
-      setProgress((prevProgress) => {
-        const newProgress = prevProgress + 4;
-        if (newProgress >= 60) {
-          clearInterval(interval);
-        }
-        return newProgress < 60 ? newProgress : 60;
-      });
-    }, 100);
-
-    try {
-      if (!biometricsAvailable) {
-        throw new Error("Biometric authentication is not available on this device.");
-      }
-      
-      // Generate a random challenge
-      const challenge = new Uint8Array(32);
-      window.crypto.getRandomValues(challenge);
-      
-      // Create authentication options
-      const authenticationOptions = {
-        challenge,
-        timeout: 60000, // 1 minute
-        userVerification: 'required' as UserVerificationRequirement,
-        rpId: window.location.hostname,
-      };
-
-      // Start the authentication process
-      const credential = await navigator.credentials.get({
-        publicKey: authenticationOptions
-      }) as PublicKeyCredential;
-      
-      // Clear progress interval and set to 100%
-      clearInterval(interval);
-      setProgress(100);
-
-      // Process the authentication response
-      if (credential) {
-        console.log("Authentication successful:", credential);
-        
-        // In a real app, you would validate this with your backend
-        // Here we're just simulating a successful auth
-        
-        // Success - redirect after scan completes
-        setTimeout(() => {
-          setIsScanning(false);
-          toast({
-            title: "Authentication Successful",
-            description: "Biometric verification completed successfully.",
-            variant: "default",
-          });
-          navigate("/elections");
-        }, 500);
-      }
-    } catch (err) {
-      clearInterval(interval);
-      console.error("Biometric authentication error:", err);
-      setIsScanning(false);
-      setProgress(0);
-      
-      setError(err instanceof Error ? err.message : "Authentication failed. Please try again.");
-      toast({
-        title: "Authentication Failed",
-        description: err instanceof Error ? err.message : "Could not verify your biometrics.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Fallback to continue without biometrics
-  const handleSkipBiometrics = () => {
-    toast({
-      title: "Biometrics Skipped",
-      description: "Proceeding without biometric verification.",
-      variant: "default",
-    });
-    navigate("/elections");
-  };
-
-  return (
-    <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
-      <div className="text-center mb-6">
-        <div className="inline-flex p-3 rounded-full bg-vote-light mb-4">
-          <FingerprintIcon className="h-10 w-10 text-vote-teal" />
-        </div>
-        <h2 className="text-2xl font-bold text-vote-blue">Biometric Authentication</h2>
-        <p className="text-gray-600 mt-2">
-          Verify your identity with your fingerprint to access your ballot
-        </p>
-      </div>
-
-      {biometricsAvailable === false && (
-        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div className="flex items-start">
-            <AlertCircleIcon className="h-5 w-5 text-yellow-500 mr-2 mt-0.5" />
-            <div>
-              <h3 className="font-medium text-yellow-700">Biometrics Not Available</h3>
-              <p className="text-sm text-yellow-600 mt-1">
-                Your device or browser doesn't support biometric authentication. Consider using a modern 
-                mobile device with fingerprint capabilities.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div className="flex items-start">
-            <AlertCircleIcon className="h-5 w-5 text-red-500 mr-2 mt-0.5" />
-            <div>
-              <h3 className="font-medium text-red-700">Authentication Error</h3>
-              <p className="text-sm text-red-600 mt-1">{error}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="mb-6 flex justify-center">
-        <div 
-          className={`relative w-48 h-48 bg-vote-gray rounded-lg flex items-center justify-center ${
-            isScanning ? "biometric-scan" : ""
-          }`}
-          style={{border: '1px solid #e5e7eb'}}
-        >
-          <FingerprintDisplay isScanning={isScanning} />
-          
-          {isScanning && (
-            <div className="absolute bottom-4 left-0 right-0 px-4">
-              <div className="w-full bg-gray-200 rounded-full h-2.5">
-                <div
-                  className="bg-vote-accent h-2.5 rounded-full transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                ></div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <Button
-        onClick={handleStartScan}
-        disabled={isScanning || biometricsAvailable === false}
-        className="w-full bg-vote-teal hover:bg-vote-blue transition-colors"
-      >
-        {isScanning ? (
-          <>
-            <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-            Verifying...
-          </>
-        ) : (
-          "Scan Fingerprint"
-        )}
-      </Button>
-
-      <div className="mt-6 text-center">
-        <p className="text-sm text-gray-500">
-          Having trouble? <button 
-            className="text-vote-teal hover:underline" 
-            onClick={handleSkipBiometrics}
-          >
-            Use alternative verification
-          </button>
-        </p>
-      </div>
-    </div>
-  );
-};
-
+// Fingerprint display component
 const FingerprintDisplay = ({ isScanning }: { isScanning: boolean }) => {
   return (
     <svg
@@ -280,5 +63,229 @@ const FingerprintDisplay = ({ isScanning }: { isScanning: boolean }) => {
         fill="currentColor"
       />
     </svg>
+  );
+};
+
+export const BiometricAuth = () => {
+  const [isScanning, setIsScanning] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [biometricsAvailable, setBiometricsAvailable] = useState<boolean | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user) {
+      toast({ title: "User not authenticated", description: "Please sign in.", variant: "destructive" });
+      navigate("/auth");
+      return;
+    }
+    checkBiometricSupport();
+  }, [user, navigate, toast]);
+
+  const checkBiometricSupport = async () => {
+    try {
+      if (!window.PublicKeyCredential) {
+        setBiometricsAvailable(false);
+        setError("WebAuthn (Biometrics) is not supported by this browser.");
+        return;
+      }
+      const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+      setBiometricsAvailable(available);
+      if (!available) {
+        setError("Your device doesn't support biometric authentication, or it's not enabled.");
+      }
+    } catch (err) {
+      console.error("Error checking biometric support:", err);
+      setBiometricsAvailable(false);
+      setError("Could not determine if biometrics are supported.");
+    }
+  };
+
+  const handleStartScan = async () => {
+    if (!user) {
+      setError("User not authenticated. Cannot perform biometric authentication.");
+      return;
+    }
+    if (!biometricsAvailable) {
+      setError("Biometric authentication is not available on this device/browser.");
+      return;
+    }
+    
+    // Retrieve the stored credential ID from user_metadata
+    const userCredentialId = user.user_metadata?.biometric_credential_id as string | undefined;
+
+    if (!userCredentialId) {
+      setError("No biometric credential found for this user. Please ensure you have registered biometrics.");
+      toast({
+        title: "No Biometric Credential",
+        description: "Please register biometrics first. You might be redirected.",
+        variant: "warning",
+      });
+      // Optionally navigate to registration or provide guidance
+      // For now, we'll just show the error and let the user decide.
+      // Consider: navigate("/biometric-register");
+      return;
+    }
+
+    setIsScanning(true);
+    setProgress(0);
+    setError(null);
+    
+    const interval = setInterval(() => {
+      setProgress((prevProgress) => {
+        const newProgress = prevProgress + 4; // Adjusted for smoother visual progress
+        if (newProgress >= 60) clearInterval(interval);
+        return newProgress < 60 ? newProgress : 60;
+      });
+    }, 100);
+
+    try {
+      const challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+      
+      const authenticationOptions: PublicKeyCredentialRequestOptions = {
+        challenge,
+        timeout: 60000,
+        userVerification: 'required',
+        rpId: window.location.hostname,
+        allowCredentials: [{
+          type: 'public-key',
+          id: base64ToBuffer(userCredentialId),
+          transports: ['internal', 'hybrid'], // Allow platform and cross-platform (e.g. phone via QR)
+        }],
+      };
+
+      const credential = await navigator.credentials.get({ publicKey: authenticationOptions }) as PublicKeyCredential | null;
+      
+      clearInterval(interval);
+      setProgress(100);
+
+      if (credential) {
+        // In a real app, send credential.response to backend for verification
+        console.log("Authentication successful:", credential);
+        
+        toast({
+          title: "Authentication Successful",
+          description: "Biometric verification completed.",
+        });
+        setTimeout(() => {
+          setIsScanning(false);
+          navigate("/elections");
+        }, 500);
+      } else {
+        throw new Error("Authentication was cancelled or failed to produce a credential.");
+      }
+    } catch (err) {
+      clearInterval(interval);
+      console.error("Biometric authentication error:", err);
+      setIsScanning(false);
+      setProgress(0);
+      const errorMessage = err instanceof Error ? err.message : "Authentication failed. Please try again.";
+      setError(errorMessage);
+      toast({
+        title: "Authentication Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSkipBiometrics = () => {
+    toast({
+      title: "Biometrics Skipped",
+      description: "Proceeding without biometric verification for this session.",
+    });
+    navigate("/elections");
+  };
+
+  return (
+    <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
+      <div className="text-center mb-6">
+        <div className="inline-flex p-3 rounded-full bg-vote-light mb-4">
+          <FingerprintIcon className="h-10 w-10 text-vote-teal" />
+        </div>
+        <h2 className="text-2xl font-bold text-vote-blue">Biometric Authentication</h2>
+        <p className="text-gray-600 mt-2">
+          Verify your identity with your fingerprint to access your ballot
+        </p>
+      </div>
+
+      {biometricsAvailable === false && (
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-start">
+            <AlertCircleIcon className="h-5 w-5 text-yellow-500 mr-2 mt-0.5" />
+            <div>
+              <h3 className="font-medium text-yellow-700">Biometrics Not Available</h3>
+              <p className="text-sm text-yellow-600 mt-1">
+                Your device or browser doesn't support biometric authentication. Consider using a modern 
+                mobile device with fingerprint capabilities.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-start">
+            <AlertCircleIcon className="h-5 w-5 text-red-500 mr-2 mt-0.5" />
+            <div>
+              <h3 className="font-medium text-red-700">Authentication Error</h3>
+              <p className="text-sm text-red-600 mt-1">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <div className="mb-6 flex justify-center">
+        <div 
+          className={`relative w-48 h-48 bg-vote-gray rounded-lg flex items-center justify-center ${
+            isScanning ? "biometric-scan" : ""
+          }`}
+          style={{border: '1px solid #e5e7eb'}}
+        >
+          <FingerprintDisplay isScanning={isScanning} />
+          
+          {isScanning && (
+            <div className="absolute bottom-4 left-0 right-0 px-4">
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div
+                  className="bg-vote-accent h-2.5 rounded-full transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <Button
+        onClick={handleStartScan}
+        disabled={isScanning || biometricsAvailable === false || !user}
+        className="w-full bg-vote-teal hover:bg-vote-blue transition-colors"
+      >
+        {isScanning ? (
+          <>
+            <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+            Verifying...
+          </>
+        ) : (
+          "Scan Fingerprint to Authenticate"
+        )}
+      </Button>
+
+      <div className="mt-6 text-center">
+        <p className="text-sm text-gray-500">
+          Having trouble? <button 
+            className="text-vote-teal hover:underline" 
+            onClick={handleSkipBiometrics}
+          >
+            Use alternative verification
+          </button>
+        </p>
+      </div>
+    </div>
   );
 };

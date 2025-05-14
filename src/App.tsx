@@ -1,9 +1,9 @@
-
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import Index from "@/pages/Index";
 import AuthPage from "@/pages/AuthPage";
 import BiometricAuthPage from "@/pages/BiometricAuthPage";
+import BiometricRegisterPage from "@/pages/BiometricRegisterPage"; // New
 import ElectionsPage from "@/pages/ElectionsPage";
 import ElectionDetailPage from "@/pages/ElectionDetailPage";
 import VoteConfirmationPage from "@/pages/VoteConfirmationPage";
@@ -28,6 +28,7 @@ const App = () => {
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/biometric-auth" element={<BiometricAuthPage />} />
+          <Route path="/biometric-register" element={<BiometricRegisterPage />} /> {/* New Route */}
           <Route path="/elections" element={<ElectionsPage />} />
           <Route path="/elections/:id" element={<ElectionDetailPage />} />
           <Route path="/vote-confirmation" element={<VoteConfirmationPage />} />
