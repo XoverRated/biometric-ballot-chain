@@ -113,7 +113,6 @@ export const BiometricAuth = () => {
       return;
     }
     
-    // Retrieve the stored credential ID from user_metadata
     const userCredentialId = user.user_metadata?.biometric_credential_id as string | undefined;
 
     if (!userCredentialId) {
@@ -123,9 +122,6 @@ export const BiometricAuth = () => {
         description: "Please register biometrics first. You might be redirected to registration if this persists.",
         variant: "default",
       });
-      // Optionally navigate to registration or provide guidance
-      // For now, we'll just show the error and let the user decide.
-      // Consider: navigate("/biometric-register");
       return;
     }
 
@@ -135,7 +131,7 @@ export const BiometricAuth = () => {
     
     const interval = setInterval(() => {
       setProgress((prevProgress) => {
-        const newProgress = prevProgress + 4; // Adjusted for smoother visual progress
+        const newProgress = prevProgress + 4;
         if (newProgress >= 60) clearInterval(interval);
         return newProgress < 60 ? newProgress : 60;
       });
@@ -153,7 +149,7 @@ export const BiometricAuth = () => {
         allowCredentials: [{
           type: 'public-key',
           id: base64ToBuffer(userCredentialId),
-          transports: ['internal', 'hybrid'], // Allow platform and cross-platform (e.g. phone via QR)
+          transports: ['internal', 'hybrid'],
         }],
       };
 
@@ -163,7 +159,6 @@ export const BiometricAuth = () => {
       setProgress(100);
 
       if (credential) {
-        // In a real app, send credential.response to backend for verification
         console.log("Authentication successful:", credential);
         
         toast({
@@ -190,14 +185,6 @@ export const BiometricAuth = () => {
         variant: "destructive",
       });
     }
-  };
-
-  const handleSkipBiometrics = () => {
-    toast({
-      title: "Biometrics Skipped",
-      description: "Proceeding without biometric verification for this session.",
-    });
-    navigate("/elections");
   };
 
   return (
@@ -275,17 +262,6 @@ export const BiometricAuth = () => {
           "Scan Fingerprint to Authenticate"
         )}
       </Button>
-
-      <div className="mt-6 text-center">
-        <p className="text-sm text-gray-500">
-          Having trouble? <button 
-            className="text-vote-teal hover:underline" 
-            onClick={handleSkipBiometrics}
-          >
-            Use alternative verification
-          </button>
-        </p>
-      </div>
     </div>
   );
 };
