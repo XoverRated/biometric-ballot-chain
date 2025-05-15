@@ -1,16 +1,64 @@
 
+import React, { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MailIcon, PhoneIcon, MapPinIcon } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast"; // Corrected import path
 
 const ContactPage = () => {
-  const handleSubmit = (e: React.FormEvent) => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission logic (e.g., send email, save to DB)
-    alert("Message sent (dummy action)!");
+    setIsSubmitting(true);
+
+    if (!name || !email || !subject || !message) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill out all required fields.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("contact_messages")
+        .insert([{ name, email, subject, message }]);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Message Sent!",
+        description: "Thanks for reaching out. We'll get back to you soon.",
+      });
+      // Reset form
+      setName("");
+      setEmail("");
+      setSubject("");
+      setMessage("");
+    } catch (error: any) {
+      console.error("Error sending contact message:", error);
+      toast({
+        title: "Error Sending Message",
+        description: error.message || "Could not send your message. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -24,22 +72,62 @@ const ContactPage = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <Label htmlFor="name">Full Name</Label>
-                <Input id="name" type="text" placeholder="Your Name" required className="mt-1" />
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Your Name"
+                  required
+                  className="mt-1"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={isSubmitting}
+                />
               </div>
               <div>
                 <Label htmlFor="email">Email Address</Label>
-                <Input id="email" type="email" placeholder="your@email.com" required className="mt-1" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="your@email.com"
+                  required
+                  className="mt-1"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isSubmitting}
+                />
               </div>
               <div>
                 <Label htmlFor="subject">Subject</Label>
-                <Input id="subject" type="text" placeholder="Inquiry Subject" required className="mt-1" />
+                <Input
+                  id="subject"
+                  type="text"
+                  placeholder="Inquiry Subject"
+                  required
+                  className="mt-1"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  disabled={isSubmitting}
+                />
               </div>
               <div>
                 <Label htmlFor="message">Message</Label>
-                <Textarea id="message" placeholder="Your message..." required rows={5} className="mt-1" />
+                <Textarea
+                  id="message"
+                  placeholder="Your message..."
+                  required
+                  rows={5}
+                  className="mt-1"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  disabled={isSubmitting}
+                />
               </div>
-              <Button type="submit" className="w-full bg-vote-teal hover:bg-vote-blue">
-                Send Message
+              <Button
+                type="submit"
+                className="w-full bg-vote-teal hover:bg-vote-blue"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Sending..." : "Send Message"}
               </Button>
             </form>
           </div>
