@@ -1,47 +1,127 @@
 
 import { MainLayout } from "@/components/layout/MainLayout";
 import { BallotCard } from "@/components/elections/BallotCard";
-import { Button } from "@/components/ui/button";
+// Button is not used directly, remove if not needed for other parts
+// import { Button } from "@/components/ui/button"; 
 import { Link, useParams } from "react-router-dom";
-import { CalendarIcon, ClockIcon, ChevronLeftIcon, AlertTriangleIcon } from "lucide-react";
+import { CalendarIcon, ClockIcon, ChevronLeftIcon, AlertTriangleIcon, InfoIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PollStation } from "@/components/elections/PollStation"; // Import PollStation
 
-const ElectionDetailPage = () => {
-  const { id } = useParams<{ id: string }>();
-  
-  // Mock election data based on ID
-  // In a real app, this would fetch from API/blockchain
-  const election = {
-    id: Number(id) || 1,
+interface CandidateMock {
+  id: string;
+  name: string;
+  party: string;
+}
+interface PositionMock {
+  title: string;
+  candidates: CandidateMock[];
+}
+interface ElectionMock {
+  id: number;
+  title: string;
+  date: string;
+  description: string;
+  status: "Active" | "Upcoming" | "Completed";
+  timeRemaining?: string;
+  location: string;
+  positions: PositionMock[];
+  // For PollStation, we need a string ID, typically a UUID from DB.
+  // For mock, we'll use the numeric ID as a string.
+  dbElectionId: string; 
+}
+
+const MOCK_ELECTIONS: ElectionMock[] = [
+  {
+    id: 1,
+    dbElectionId: "1", // Using numeric string for mock. Replace with actual UUID if connecting to DB
     title: "City Council Election",
     date: "May 15, 2025",
     description: "Vote for city council representatives for the upcoming term.",
-    status: "Active" as const,
+    status: "Active",
     timeRemaining: "1 day 4 hours",
     location: "All City Districts",
     positions: [
       {
-        title: "City Mayor",
+        title: "City Council Representative",
         candidates: [
-          { id: "mayor-1", name: "Jane Smith", party: "Progress Party" },
-          { id: "mayor-2", name: "Robert Johnson", party: "Citizens Alliance" },
-          { id: "mayor-3", name: "Amanda Williams", party: "Independent" },
-        ],
-      },
-      {
-        title: "City Council - District 3",
-        candidates: [
-          { id: "council-1", name: "Michael Chen", party: "Progress Party" },
-          { id: "council-2", name: "Sarah Davis", party: "Citizens Alliance" },
-          { id: "council-3", name: "David Miller", party: "Independent" },
+          { id: "cc-1", name: "Reagan Jonathan Peter", party: "Progress Party" },
+          { id: "cc-2", name: "Joseph Daniel Mwakyoma", party: "Citizens Alliance" },
+          { id: "cc-3", name: "Isack Godfrey Lyanga", party: "Independent Voice" },
         ],
       },
     ],
-  };
+  },
+  {
+    id: 2,
+    dbElectionId: "2", // Using numeric string for mock
+    title: "School Board Special Election",
+    date: "May 18, 2025",
+    description: "Special election for vacant school board position.",
+    status: "Active",
+    timeRemaining: "4 days 12 hours",
+    location: "District 5",
+    positions: [
+      {
+        title: "School Board Member",
+        candidates: [
+          { id: "sb-1", name: "Juan Isack Jumbe", party: "Education First" },
+          { id: "sb-2", name: "Dismas Ferdinand Shange", party: "Community Voice" },
+          { id: "sb-3", name: "Irene Sylvester Wambura", party: "Future Leaders Now" },
+        ],
+      },
+    ],
+  },
+  {
+    id: 3, // Corresponds to "State Senate Primary" from ElectionsPage mock
+    dbElectionId: "3",
+    title: "State Senate Primary",
+    date: "June 5, 2025",
+    description: "Primary election for state senate candidates.",
+    status: "Upcoming",
+    timeRemaining: "23 days 8 hours",
+    location: "State District 12",
+    positions: [
+      {
+        title: "State Senator - Primary",
+        candidates: [
+          // Placeholder candidates, can be updated with more names if provided
+          { id: "ssp-1", name: "Michael P. Candidate", party: "Blue Party" },
+          { id: "ssp-2", name: "Laura K. Aspirant", party: "Red Party" },
+          { id: "ssp-3", name: "David R. Hopeful", party: "Green Initiative" },
+        ],
+      },
+    ],
+  },
+];
+
+const ElectionDetailPage = () => {
+  const { id } = useParams<{ id: string }>();
+  const electionId = Number(id);
+
+  const election = MOCK_ELECTIONS.find(e => e.id === electionId) || MOCK_ELECTIONS[0]; // Fallback to first election
+
+  if (!election) {
+    // This should ideally redirect to a 404 page or show an error message
+    return (
+      <MainLayout>
+        <div className="max-w-4xl mx-auto py-12 text-center">
+          <Alert variant="destructive">
+            <AlertTriangleIcon className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>Election not found.</AlertDescription>
+          </Alert>
+          <Link to="/elections" className="mt-4 inline-block text-vote-blue hover:text-vote-teal">
+            &larr; Back to Elections
+          </Link>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto py-8 px-4">
         <div className="mb-8">
           <Link to="/elections" className="text-vote-blue hover:text-vote-teal flex items-center">
             <ChevronLeftIcon className="h-4 w-4 mr-1" />
@@ -49,40 +129,101 @@ const ElectionDetailPage = () => {
           </Link>
         </div>
         
-        <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+        <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-8 border border-gray-200">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-vote-blue mb-2">{election.title}</h1>
-            <p className="text-gray-600">{election.description}</p>
+            <h1 className="text-3xl md:text-4xl font-bold text-vote-blue mb-2">{election.title}</h1>
+            <p className="text-gray-700 text-lg">{election.description}</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 text-gray-600">
             <div className="flex items-center">
-              <CalendarIcon className="h-5 w-5 text-vote-teal mr-2" />
-              <span>Election Date: <strong>{election.date}</strong></span>
+              <CalendarIcon className="h-5 w-5 text-vote-teal mr-3" />
+              <span>Date: <strong>{election.date}</strong></span>
             </div>
-            <div className="flex items-center">
-              <ClockIcon className="h-5 w-5 text-vote-teal mr-2" />
-              <span>Time Remaining: <strong>{election.timeRemaining}</strong></span>
-            </div>
+            {election.timeRemaining && (
+              <div className="flex items-center">
+                <ClockIcon className="h-5 w-5 text-vote-teal mr-3" />
+                <span>
+                  {election.status === "Active" ? "Closes in: " : "Opens in: "}
+                  <strong>{election.timeRemaining}</strong>
+                </span>
+              </div>
+            )}
           </div>
           
-          <Alert className="mb-6">
-            <AlertTriangleIcon className="h-4 w-4" />
-            <AlertTitle>Important</AlertTitle>
-            <AlertDescription>
-              You can only submit your ballot once and it cannot be changed after submission. 
-              Please review your choices carefully.
-            </AlertDescription>
-          </Alert>
+          {election.status === "Active" && (
+            <Alert className="mb-6 bg-blue-50 border-blue-300 text-blue-700">
+              <InfoIcon className="h-4 w-4 text-blue-600" />
+              <AlertTitle className="text-blue-800">This Election is Active</AlertTitle>
+              <AlertDescription>
+                You can cast your vote for the positions listed below. Remember, you can only submit your ballot once.
+              </AlertDescription>
+            </Alert>
+          )}
+          {election.status === "Upcoming" && (
+             <Alert className="mb-6 bg-yellow-50 border-yellow-300 text-yellow-700">
+              <InfoIcon className="h-4 w-4 text-yellow-600" />
+              <AlertTitle className="text-yellow-800">Upcoming Election</AlertTitle>
+              <AlertDescription>
+                This election is not yet active. Voting will open on {election.date}.
+              </AlertDescription>
+            </Alert>
+          )}
+           {election.status === "Completed" && (
+             <Alert className="mb-6 bg-gray-100 border-gray-300 text-gray-700">
+              <InfoIcon className="h-4 w-4 text-gray-600" />
+              <AlertTitle className="text-gray-800">Election Completed</AlertTitle>
+              <AlertDescription>
+                Voting for this election has ended.
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
         
-        {election.positions.map((position, index) => (
+        {election.status === "Active" && election.positions.map((position, index) => (
           <BallotCard 
             key={index}
             position={position.title}
             candidates={position.candidates}
+            // Potentially pass electionId if BallotCard needs it for submission
+            // electionId={election.dbElectionId} 
           />
         ))}
+
+        {election.status !== "Active" && election.positions.length > 0 && (
+          <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-8 border border-gray-200">
+            <h2 className="text-2xl font-semibold text-vote-blue mb-4">Positions & Candidates</h2>
+            {election.positions.map((position, index) => (
+              <div key={index} className="mb-4">
+                <h3 className="text-xl font-medium text-vote-blue mb-2">{position.title}</h3>
+                <ul className="list-disc list-inside pl-4 text-gray-700">
+                  {position.candidates.map(candidate => (
+                    <li key={candidate.id}>{candidate.name} ({candidate.party})</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* PollStation Integration */}
+        {(election.status === "Active" || election.status === "Completed") && (
+          <div className="mt-12">
+            <h2 className="text-2xl font-semibold text-vote-blue mb-6">
+              {election.status === "Active" ? "Live Election Results" : "Final Election Results"}
+            </h2>
+            <PollStation electionId={election.dbElectionId} />
+          </div>
+        )}
+
+         <Alert className="mt-10">
+            <AlertTriangleIcon className="h-4 w-4" />
+            <AlertTitle>Important Reminder</AlertTitle>
+            <AlertDescription>
+              If voting, you can only submit your ballot once and it cannot be changed after submission. 
+              Please review your choices carefully.
+            </AlertDescription>
+          </Alert>
       </div>
     </MainLayout>
   );
