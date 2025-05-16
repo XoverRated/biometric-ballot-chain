@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +13,9 @@ interface VerificationResult {
   selection: string;
   blockNumber: number;
 }
+
+// This is the mock transaction ID that should lead to successful verification
+const VALID_MOCK_TRANSACTION_ID = "0x7f9e8d7c6b5a4d3c2b1a0e9d8c7b6a5f4e3d2c1b";
 
 export const VoteVerifier = () => {
   const [transactionId, setTransactionId] = useState("");
@@ -31,14 +33,14 @@ export const VoteVerifier = () => {
     setTimeout(() => {
       setIsVerifying(false);
       
-      // Mock verification result
-      if (transactionId.startsWith("0x")) {
+      // Updated mock verification result
+      if (transactionId === VALID_MOCK_TRANSACTION_ID) {
         setResult({
           verified: true,
           timestamp: "May 13, 2025 14:32:15 UTC",
           election: "City Council Election 2025",
           position: "City Mayor",
-          selection: "Jane Smith",
+          selection: "Jane Smith", // Note: This is still mock data, VoteDetails uses actual data for this ID
           blockNumber: 13542687,
         });
         
