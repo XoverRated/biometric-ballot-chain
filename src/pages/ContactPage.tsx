@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MailIcon, PhoneIcon, MapPinIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast"; // Corrected import path
+import { useToast } from "@/hooks/use-toast";
 
 const ContactPage = () => {
   const [name, setName] = useState("");
@@ -139,28 +138,26 @@ const ContactPage = () => {
               <MailIcon className="h-8 w-8 text-vote-teal mt-1" />
               <div>
                 <h3 className="text-lg font-medium text-vote-blue">Email</h3>
-                <p className="text-gray-600">support@biometricballot.example.com</p>
-                <p className="text-gray-600">info@biometricballot.example.com</p>
+                <p className="text-gray-600">biometricballot.fyp100@gmail.com</p>
               </div>
             </div>
             <div className="flex items-start space-x-4">
               <PhoneIcon className="h-8 w-8 text-vote-teal mt-1" />
               <div>
                 <h3 className="text-lg font-medium text-vote-blue">Phone</h3>
-                <p className="text-gray-600">+1 (555) 123-4567 (Support)</p>
-                <p className="text-gray-600">+1 (555) 987-6543 (General)</p>
+                <p className="text-gray-600">+255 623 623 349</p>
+                <p className="text-gray-600">+255 74 428 9097</p>
               </div>
             </div>
             <div className="flex items-start space-x-4">
               <MapPinIcon className="h-8 w-8 text-vote-teal mt-1" />
               <div>
                 <h3 className="text-lg font-medium text-vote-blue">Office Address</h3>
-                <p className="text-gray-600">123 Voting Lane, Secure City, ST 98765</p>
-                <p className="text-gray-600">United States of America</p>
+                <p className="text-gray-600">Golani-Ubungo Msewe</p>
               </div>
             </div>
              <p className="text-sm text-gray-500">
-              Please note: These are dummy contact details for demonstration purposes.
+              These contact details are for the project.
             </p>
           </div>
         </div>

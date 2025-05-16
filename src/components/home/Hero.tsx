@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ShieldCheckIcon, VoteIcon, CheckCircleIcon } from "lucide-react";
@@ -10,7 +9,7 @@ export const Hero = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           <div className="order-2 md:order-1">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-              Secure Electronic Voting with Blockchain & Biometrics
+              Electronic Voting using Blockchain and Biometric Scanning Technologies
             </h1>
             <p className="text-lg md:text-xl mb-8 text-gray-100">
               Experience a revolutionary voting system that combines the security of biometric verification 
