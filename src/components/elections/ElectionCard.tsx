@@ -27,9 +27,9 @@ export const ElectionCard = ({
       case "Active":
         return "bg-green-100 text-green-800";
       case "Upcoming":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-100 text-blue-800"; // Kept for potential future use, though not displayed now
       case "Completed":
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 text-gray-800"; // Kept for potential future use
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -65,7 +65,7 @@ export const ElectionCard = ({
           <Link to={`/elections/${id}`}>
             <Button className="w-full bg-vote-blue hover:bg-vote-teal transition-colors">
               {status === "Active" ? (
-                "Vote Now"
+                "Vote / View Results" // Updated text for Active status
               ) : status === "Upcoming" ? (
                 "View Details"
               ) : (

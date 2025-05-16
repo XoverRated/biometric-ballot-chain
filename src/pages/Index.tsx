@@ -4,7 +4,8 @@ import { Hero } from "@/components/home/Hero";
 import { Features } from "@/components/home/Features";
 import { HowItWorks } from "@/components/home/HowItWorks";
 import { TrustBanner } from "@/components/home/TrustBanner";
-import { ElectionsPreview } from "@/components/home/ElectionsPreview";
+// ElectionsPreview is no longer imported
+// import { ElectionsPreview } from "@/components/home/ElectionsPreview";
 import { CTASection } from "@/components/home/CTASection";
 
 const Index = () => {
@@ -14,7 +15,7 @@ const Index = () => {
       <Features />
       <HowItWorks />
       <TrustBanner />
-      <ElectionsPreview />
+      {/* ElectionsPreview component is removed from here */}
       <CTASection />
     </MainLayout>
   );
