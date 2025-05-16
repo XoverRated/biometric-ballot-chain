@@ -1,4 +1,3 @@
-
 import { MainLayout } from "@/components/layout/MainLayout";
 import { BallotCard } from "@/components/elections/BallotCard";
 // Button is not used directly, remove if not needed for other parts
@@ -34,16 +33,16 @@ interface ElectionMock {
 const MOCK_ELECTIONS: ElectionMock[] = [
   {
     id: 1,
-    dbElectionId: "1", // Using numeric string for mock. Replace with actual UUID if connecting to DB
-    title: "City Council Election",
+    dbElectionId: "1",
+    title: "COICT Ex-COM Election",
     date: "May 15, 2025",
-    description: "Vote for city council representatives for the upcoming term.",
+    description: "Vote for COICT Ex-COM representatives for the upcoming term.",
     status: "Active",
     timeRemaining: "1 day 4 hours",
     location: "All City Districts",
     positions: [
       {
-        title: "City Council Representative",
+        title: "COICT Ex-COM Representative",
         candidates: [
           { id: "cc-1", name: "Reagan Jonathan Peter", party: "Progress Party" },
           { id: "cc-2", name: "Joseph Daniel Mwakyoma", party: "Citizens Alliance" },
@@ -54,16 +53,16 @@ const MOCK_ELECTIONS: ElectionMock[] = [
   },
   {
     id: 2,
-    dbElectionId: "2", // Using numeric string for mock
-    title: "School Board Special Election",
+    dbElectionId: "2",
+    title: "UDSM-COICT Foreign Ambassadors Election",
     date: "May 18, 2025",
-    description: "Special election for vacant school board position.",
+    description: "Special election for UDSM-COICT Foreign Ambassador positions.",
     status: "Active",
     timeRemaining: "4 days 12 hours",
     location: "District 5",
     positions: [
       {
-        title: "School Board Member",
+        title: "UDSM-COICT Foreign Ambassador",
         candidates: [
           { id: "sb-1", name: "Juan Isack Jumbe", party: "Education First" },
           { id: "sb-2", name: "Dismas Ferdinand Shange", party: "Community Voice" },
@@ -73,7 +72,7 @@ const MOCK_ELECTIONS: ElectionMock[] = [
     ],
   },
   {
-    id: 3, // Corresponds to "State Senate Primary" from ElectionsPage mock
+    id: 3, 
     dbElectionId: "3",
     title: "State Senate Primary",
     date: "June 5, 2025",
@@ -85,7 +84,6 @@ const MOCK_ELECTIONS: ElectionMock[] = [
       {
         title: "State Senator - Primary",
         candidates: [
-          // Placeholder candidates, can be updated with more names if provided
           { id: "ssp-1", name: "Michael P. Candidate", party: "Blue Party" },
           { id: "ssp-2", name: "Laura K. Aspirant", party: "Red Party" },
           { id: "ssp-3", name: "David R. Hopeful", party: "Green Initiative" },
@@ -99,7 +97,8 @@ const ElectionDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const electionId = Number(id);
 
-  const election = MOCK_ELECTIONS.find(e => e.id === electionId) || MOCK_ELECTIONS[0]; // Fallback to first election
+  // Fallback to first election if specific ID not found or invalid (useful for mock, might need adjustment for real data)
+  const election = MOCK_ELECTIONS.find(e => e.id === electionId);
 
   if (!election) {
     // This should ideally redirect to a 404 page or show an error message

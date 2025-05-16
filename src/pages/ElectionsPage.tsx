@@ -15,17 +15,17 @@ const ElectionsPage = () => {
   const activeElections = [
     {
       id: 1,
-      title: "City Council Election",
+      title: "COICT Ex-COM Election", // Updated title
       date: "May 15, 2025",
-      description: "Vote for city council representatives for the upcoming term.",
+      description: "Vote for COICT Ex-COM representatives for the upcoming term.", // Updated description slightly
       status: "Active" as const,
       timeRemaining: "1 day 4 hours",
     },
     {
       id: 2,
-      title: "School Board Special Election",
+      title: "UDSM-COICT Foreign Ambassadors Election", // Updated title
       date: "May 18, 2025",
-      description: "Special election for vacant school board position.",
+      description: "Special election for UDSM-COICT Foreign Ambassador positions.", // Updated description slightly
       status: "Active" as const,
       timeRemaining: "4 days 12 hours",
     },
@@ -93,3 +93,4 @@ const ElectionsPage = () => {
 };
 
 export default ElectionsPage;
+

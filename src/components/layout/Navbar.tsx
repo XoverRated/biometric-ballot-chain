@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { FingerprintIcon, ShieldCheckIcon, UserIcon, MenuIcon, XIcon } from "lucide-react";
+import { FingerprintIcon, UserIcon, MenuIcon, XIcon } from "lucide-react"; // Removed ShieldCheckIcon as it's not used
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,9 +32,11 @@ export const Navbar = () => {
           <Link to="/elections" className="text-gray-700 hover:text-vote-blue transition-colors">
             Elections
           </Link>
-          <Link to="/verify" className="text-gray-700 hover:text-vote-blue transition-colors">
-            Verify Votes
-          </Link>
+          {user && ( // Show Verify Votes link only if user is logged in
+            <Link to="/verify" className="text-gray-700 hover:text-vote-blue transition-colors">
+              Verify Votes
+            </Link>
+          )}
         </nav>
 
         {/* Authentication Button - Desktop */}
@@ -94,13 +96,15 @@ export const Navbar = () => {
           >
             Elections
           </Link>
-          <Link
-            to="/verify"
-            className="block px-4 py-2 hover:bg-vote-gray rounded"
-            onClick={() => setIsMobileMenuOpen(false)}
-          >
-            Verify Votes
-          </Link>
+          {user && ( // Show Verify Votes link only if user is logged in
+            <Link
+              to="/verify"
+              className="block px-4 py-2 hover:bg-vote-gray rounded"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Verify Votes
+            </Link>
+          )}
           {user ? (
             <div className="px-4 py-2">
               <UserMenu />
@@ -122,3 +126,4 @@ export const Navbar = () => {
     </header>
   );
 };
+
