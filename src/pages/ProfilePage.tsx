@@ -2,7 +2,8 @@
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+// Button is no longer used
+// import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserIcon, MailIcon, ShieldCheckIcon } from "lucide-react";
@@ -68,11 +69,7 @@ const ProfilePage = () => {
               </div>
             </div>
 
-            <div className="pt-4 text-center">
-              <Button type="button" variant="outline" className="border-vote-blue text-vote-blue hover:bg-vote-light_blue hover:text-vote-blue">
-                Edit Profile (Coming Soon)
-              </Button>
-            </div>
+            {/* Removed Edit Profile button and its container div */}
           </form>
         </div>
       </div>
