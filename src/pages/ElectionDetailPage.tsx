@@ -33,7 +33,7 @@ interface ElectionMock {
 const MOCK_ELECTIONS: ElectionMock[] = [
   {
     id: 1,
-    dbElectionId: "1",
+    dbElectionId: "10000000-0000-0000-0000-000000000001", // Updated to placeholder UUID
     title: "COICT Ex-COM Election",
     date: "May 15, 2025",
     description: "Vote for COICT Ex-COM representatives for the upcoming term.",
@@ -53,7 +53,7 @@ const MOCK_ELECTIONS: ElectionMock[] = [
   },
   {
     id: 2,
-    dbElectionId: "2",
+    dbElectionId: "10000000-0000-0000-0000-000000000002", // Updated to placeholder UUID
     title: "UDSM-COICT Foreign Ambassadors Election",
     date: "May 18, 2025",
     description: "Special election for UDSM-COICT Foreign Ambassador positions.",
@@ -73,7 +73,7 @@ const MOCK_ELECTIONS: ElectionMock[] = [
   },
   {
     id: 3, 
-    dbElectionId: "3",
+    dbElectionId: "10000000-0000-0000-0000-000000000003", // Updated to placeholder UUID
     title: "State Senate Primary",
     date: "June 5, 2025",
     description: "Primary election for state senate candidates.",
