@@ -1,29 +1,34 @@
+
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2Icon } from "lucide-react";
 
-interface VoteDetails {
+interface FetchedVoteDetails {
   timestamp: string;
   candidate: string;
-  election: string;
+  electionTitle: string; // Renamed for clarity
+  electionId: string; // The UUID of the election
   position: string;
   verificationCode: string;
 }
 
 interface VoteDetailsProps {
   verificationCode: string;
+  onDetailsLoaded?: (details: FetchedVoteDetails) => void; // Callback prop
 }
 
-export const VoteDetails = ({ verificationCode }: VoteDetailsProps) => {
-  const [details, setDetails] = useState<VoteDetails | null>(null);
+export const VoteDetails = ({ verificationCode, onDetailsLoaded }: VoteDetailsProps) => {
+  const [details, setDetails] = useState<FetchedVoteDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchVoteDetails = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const { data, error } = await supabase
+        const { data, error: fetchError } = await supabase
           .from('votes')
           .select(`
             cast_at,
@@ -33,33 +38,49 @@ export const VoteDetails = ({ verificationCode }: VoteDetailsProps) => {
               position
             ),
             elections (
+              id, 
               title
             )
           `)
           .eq('verification_code', verificationCode)
           .single();
 
-        if (error) throw error;
+        if (fetchError) throw fetchError;
 
-        if (data) {
-          setDetails({
+        if (data && data.candidates && data.elections) {
+          const fetchedData: FetchedVoteDetails = {
             timestamp: new Date(data.cast_at).toLocaleString(),
             candidate: data.candidates.name,
-            election: data.elections.title,
+            electionTitle: data.elections.title,
+            electionId: data.elections.id, // Capture election UUID
             position: data.candidates.position,
             verificationCode: data.verification_code
-          });
+          };
+          setDetails(fetchedData);
+          if (onDetailsLoaded) {
+            onDetailsLoaded(fetchedData);
+          }
+        } else {
+          throw new Error("Incomplete data received for vote details.");
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error fetching vote details:', err);
-        setError('Could not fetch vote details');
+        setError(err.message || 'Could not fetch vote details');
+        if (onDetailsLoaded) { // Notify even on error, perhaps with partial/empty data or an error flag
+            // Or, you might choose not to call onDetailsLoaded on error, depending on desired behavior
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    fetchVoteDetails();
-  }, [verificationCode]);
+    if (verificationCode) {
+      fetchVoteDetails();
+    } else {
+      setLoading(false);
+      setError("No verification code provided.");
+    }
+  }, [verificationCode, onDetailsLoaded]);
 
   if (loading) {
     return (
@@ -73,7 +94,7 @@ export const VoteDetails = ({ verificationCode }: VoteDetailsProps) => {
     return (
       <Card>
         <CardContent className="p-6">
-          <p className="text-red-500">Error loading vote details</p>
+          <p className="text-red-500">{error || "Vote details not found."}</p>
         </CardContent>
       </Card>
     );
@@ -88,7 +109,7 @@ export const VoteDetails = ({ verificationCode }: VoteDetailsProps) => {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-gray-500">Election</p>
-            <p className="font-medium">{details.election}</p>
+            <p className="font-medium">{details.electionTitle}</p>
           </div>
           <div>
             <p className="text-sm text-gray-500">Position</p>

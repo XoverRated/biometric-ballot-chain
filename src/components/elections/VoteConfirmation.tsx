@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ClipboardCopyIcon, CheckCircleIcon } from "lucide-react";
@@ -6,12 +7,23 @@ import { useToast } from "@/components/ui/use-toast";
 import { VoteDetails } from "./VoteDetails";
 import { PollStation } from "./PollStation";
 
+// Assuming FetchedVoteDetails is exported from VoteDetails or defined here
+interface FetchedVoteDetails {
+  timestamp: string;
+  candidate: string;
+  electionTitle: string;
+  electionId: string; 
+  position: string;
+  verificationCode: string;
+}
+
 export const VoteConfirmation = () => {
-  // Mock verified transaction ID
-  const transactionId = "0x7f9e8d7c6b5a4d3c2b1a0e9d8c7b6a5f4e3d2c1b";
+  // Mock verified transaction ID - this should ideally come from route state or props after vote submission
+  const transactionId = "0x7f9e8d7c6b5a4d3c2b1a0e9d8c7b6a5f4e3d2c1b"; 
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
   const [showPollResults, setShowPollResults] = useState(false);
+  const [confirmedElectionId, setConfirmedElectionId] = useState<string | null>(null);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(transactionId);
@@ -21,6 +33,10 @@ export const VoteConfirmation = () => {
       description: "Your verification code has been copied to clipboard.",
     });
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleVoteDetailsLoaded = (details: FetchedVoteDetails) => {
+    setConfirmedElectionId(details.electionId);
   };
 
   return (
@@ -50,18 +66,25 @@ export const VoteConfirmation = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <VoteDetails verificationCode={transactionId} />
+        <VoteDetails 
+          verificationCode={transactionId} 
+          onDetailsLoaded={handleVoteDetailsLoaded} 
+        />
         
         <div className="space-y-8">
           <Button 
             onClick={() => setShowPollResults(!showPollResults)}
             className="w-full bg-vote-blue hover:bg-vote-teal"
+            disabled={!confirmedElectionId} // Disable if no electionId yet
           >
             {showPollResults ? "Hide Poll Results" : "View Live Poll Results"}
           </Button>
           
-          {showPollResults && (
-            <PollStation electionId="mock-election-id" />
+          {showPollResults && confirmedElectionId && (
+            <PollStation electionId={confirmedElectionId} />
+          )}
+          {showPollResults && !confirmedElectionId && (
+            <p className="text-sm text-gray-500 text-center">Loading election data for poll...</p>
           )}
         </div>
       </div>
