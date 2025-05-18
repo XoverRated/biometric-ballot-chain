@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,7 +44,13 @@ export const VoteDetails = ({ verificationCode, onDetailsLoaded }: VoteDetailsPr
           .eq('verification_code', verificationCode)
           .single();
 
-        if (fetchError) throw fetchError;
+        if (fetchError) {
+            // Check if the error is due to no rows found (PGRST116)
+            if (fetchError.code === 'PGRST116') {
+                throw new Error("No vote details found for the provided verification code. This can happen if the code is incorrect or the vote record doesn't exist.");
+            }
+            throw fetchError; // Re-throw other Supabase errors
+        }
 
         if (data && data.candidates && data.elections) {
           const fetchedData: FetchedVoteDetails = {
@@ -61,13 +66,24 @@ export const VoteDetails = ({ verificationCode, onDetailsLoaded }: VoteDetailsPr
             onDetailsLoaded(fetchedData);
           }
         } else {
-          throw new Error("Incomplete data received for vote details.");
+          // This case should ideally be covered by fetchError PGRST116 if no data,
+          // but as a fallback for unexpected scenarios where data is null without a specific error.
+          throw new Error("Incomplete data received for vote details. The vote might not have been recorded correctly.");
         }
       } catch (err: any) {
         console.error('Error fetching vote details:', err);
-        setError(err.message || 'Could not fetch vote details');
-        if (onDetailsLoaded) { // Notify even on error, perhaps with partial/empty data or an error flag
-            // Or, you might choose not to call onDetailsLoaded on error, depending on desired behavior
+        // Use the error message directly if it's one of our custom errors,
+        // otherwise provide a generic message for other types of errors.
+        if (err.message.includes("No vote details found") || err.message.includes("Incomplete data received")) {
+            setError(err.message);
+        } else {
+            setError('Could not fetch vote details due to an unexpected error.');
+        }
+        
+        // Notify onDetailsLoaded, potentially with an error indicator or empty data if desired.
+        // Current implementation doesn't explicitly pass error state via onDetailsLoaded.
+        if (onDetailsLoaded) {
+            // onDetailsLoaded(null); // Or some other indicator of failure
         }
       } finally {
         setLoading(false);
