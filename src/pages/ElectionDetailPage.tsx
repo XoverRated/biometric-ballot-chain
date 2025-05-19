@@ -1,14 +1,12 @@
 import { MainLayout } from "@/components/layout/MainLayout";
 import { BallotCard } from "@/components/elections/BallotCard";
-// Button is not used directly, remove if not needed for other parts
-// import { Button } from "@/components/ui/button"; 
 import { Link, useParams } from "react-router-dom";
 import { CalendarIcon, ClockIcon, ChevronLeftIcon, AlertTriangleIcon, InfoIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { PollStation } from "@/components/elections/PollStation"; // Import PollStation
+import { PollStation } from "@/components/elections/PollStation";
 
 interface CandidateMock {
-  id: string;
+  id: string; // Will now be a UUID
   name: string;
   party: string;
 }
@@ -25,15 +23,13 @@ interface ElectionMock {
   timeRemaining?: string;
   location: string;
   positions: PositionMock[];
-  // For PollStation, we need a string ID, typically a UUID from DB.
-  // For mock, we'll use the numeric ID as a string.
   dbElectionId: string; 
 }
 
 const MOCK_ELECTIONS: ElectionMock[] = [
   {
     id: 1,
-    dbElectionId: "10000000-0000-0000-0000-000000000001", // Updated to placeholder UUID
+    dbElectionId: "10000000-0000-0000-0000-000000000001",
     title: "COICT Ex-COM Election",
     date: "May 15, 2025",
     description: "Vote for COICT Ex-COM representatives for the upcoming term.",
@@ -44,16 +40,16 @@ const MOCK_ELECTIONS: ElectionMock[] = [
       {
         title: "COICT Ex-COM Representative",
         candidates: [
-          { id: "cc-1", name: "Reagan Jonathan Peter", party: "Progress Party" },
-          { id: "cc-2", name: "Joseph Daniel Mwakyoma", party: "Citizens Alliance" },
-          { id: "cc-3", name: "Isack Godfrey Lyanga", party: "Independent Voice" },
+          { id: "c01c7000-0001-0000-0000-000000000001", name: "Reagan Jonathan Peter", party: "Progress Party" },
+          { id: "c01c7000-0001-0000-0000-000000000002", name: "Joseph Daniel Mwakyoma", party: "Citizens Alliance" },
+          { id: "c01c7000-0001-0000-0000-000000000003", name: "Isack Godfrey Lyanga", party: "Independent Voice" },
         ],
       },
     ],
   },
   {
     id: 2,
-    dbElectionId: "10000000-0000-0000-0000-000000000002", // Updated to placeholder UUID
+    dbElectionId: "10000000-0000-0000-0000-000000000002",
     title: "UDSM-COICT Foreign Ambassadors Election",
     date: "May 18, 2025",
     description: "Special election for UDSM-COICT Foreign Ambassador positions.",
@@ -64,16 +60,16 @@ const MOCK_ELECTIONS: ElectionMock[] = [
       {
         title: "UDSM-COICT Foreign Ambassador",
         candidates: [
-          { id: "sb-1", name: "Juan Isack Jumbe", party: "Education First" },
-          { id: "sb-2", name: "Dismas Ferdinand Shange", party: "Community Voice" },
-          { id: "sb-3", name: "Irene Sylvester Wambura", party: "Future Leaders Now" },
+          { id: "c01c7000-0002-0000-0000-000000000001", name: "Juan Isack Jumbe", party: "Education First" },
+          { id: "c01c7000-0002-0000-0000-000000000002", name: "Dismas Ferdinand Shange", party: "Community Voice" },
+          { id: "c01c7000-0002-0000-0000-000000000003", name: "Irene Sylvester Wambura", party: "Future Leaders Now" },
         ],
       },
     ],
   },
   {
     id: 3, 
-    dbElectionId: "10000000-0000-0000-0000-000000000003", // Updated to placeholder UUID
+    dbElectionId: "10000000-0000-0000-0000-000000000003",
     title: "State Senate Primary",
     date: "June 5, 2025",
     description: "Primary election for state senate candidates.",
@@ -84,9 +80,9 @@ const MOCK_ELECTIONS: ElectionMock[] = [
       {
         title: "State Senator - Primary",
         candidates: [
-          { id: "ssp-1", name: "Michael P. Candidate", party: "Blue Party" },
-          { id: "ssp-2", name: "Laura K. Aspirant", party: "Red Party" },
-          { id: "ssp-3", name: "David R. Hopeful", party: "Green Initiative" },
+          { id: "c01c7000-0003-0000-0000-000000000001", name: "Michael P. Candidate", party: "Blue Party" },
+          { id: "c01c7000-0003-0000-0000-000000000002", name: "Laura K. Aspirant", party: "Red Party" },
+          { id: "c01c7000-0003-0000-0000-000000000003", name: "David R. Hopeful", party: "Green Initiative" },
         ],
       },
     ],
@@ -95,13 +91,11 @@ const MOCK_ELECTIONS: ElectionMock[] = [
 
 const ElectionDetailPage = () => {
   const { id } = useParams<{ id: string }>();
-  const electionIdParams = Number(id); // Renamed to avoid conflict with electionId prop later
+  const electionIdParams = Number(id);
 
-  // Fallback to first election if specific ID not found or invalid (useful for mock, might need adjustment for real data)
   const election = MOCK_ELECTIONS.find(e => e.id === electionIdParams);
 
   if (!election) {
-    // This should ideally redirect to a 404 page or show an error message
     return (
       <MainLayout>
         <div className="max-w-4xl mx-auto py-12 text-center">
@@ -184,7 +178,7 @@ const ElectionDetailPage = () => {
             key={index}
             position={position.title}
             candidates={position.candidates}
-            electionId={election.dbElectionId} // Pass the election's UUID
+            electionId={election.dbElectionId}
           />
         ))}
 
@@ -204,7 +198,6 @@ const ElectionDetailPage = () => {
           </div>
         )}
         
-        {/* PollStation Integration */}
         {(election.status === "Active" || election.status === "Completed") && (
           <div className="mt-12">
             <h2 className="text-2xl font-semibold text-vote-blue mb-6">
