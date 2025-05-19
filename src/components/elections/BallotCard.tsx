@@ -7,6 +7,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2Icon, ShieldCheckIcon } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Candidate {
   id: string;
@@ -17,30 +19,85 @@ interface Candidate {
 interface BallotCardProps {
   position: string;
   candidates: Candidate[];
+  electionId: string; // Added electionId
 }
 
-export const BallotCard = ({ position, candidates }: BallotCardProps) => {
+export const BallotCard = ({ position, candidates, electionId }: BallotCardProps) => {
   const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  const handleSubmit = () => {
-    if (!selectedCandidate) return;
+  const handleSubmit = async () => {
+    if (!selectedCandidate || !user || !electionId) {
+        toast({
+            title: "Error",
+            description: "Missing information to cast vote. Please ensure you are logged in and an election is selected.",
+            variant: "destructive",
+        });
+        return;
+    }
     
     setIsSubmitting(true);
     
-    // Simulate submission to the blockchain
-    setTimeout(() => {
-      setIsSubmitting(false);
-      
+    try {
+      const verification_code = crypto.randomUUID();
+      // For now, blockchain_hash can be a placeholder or another UUID.
+      // In a real scenario, this would come from a blockchain integration.
+      const blockchain_hash = `simulated-${crypto.randomUUID()}`; 
+
+      const voteToInsert = {
+        election_id: electionId,
+        candidate_id: selectedCandidate,
+        voter_id: user.id,
+        verification_code: verification_code,
+        blockchain_hash: blockchain_hash,
+      };
+
+      const { data: insertedVote, error } = await supabase
+        .from('votes')
+        .insert(voteToInsert)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error casting vote:", error);
+        toast({
+          title: "Vote Casting Failed",
+          description: error.message || "Could not record your vote. Please try again.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (insertedVote) {
+        toast({
+          title: "Vote Cast Successfully",
+          description: "Your vote has been securely recorded.", // Simplified message
+        });
+        // Pass the actual verification code to the confirmation page
+        navigate("/vote-confirmation", { state: { verificationCode: insertedVote.verification_code } });
+      } else {
+        // Should not happen if insert was successful and .single() was used correctly with .select()
+         toast({
+          title: "Vote Casting Problem",
+          description: "Your vote was submitted but we couldn't get confirmation. Please check verification page later.",
+          variant: "destructive",
+        });
+      }
+
+    } catch (err: any) {
+      console.error("Unexpected error casting vote:", err);
       toast({
-        title: "Vote Cast Successfully",
-        description: "Your vote has been securely recorded on the blockchain.",
+        title: "Vote Casting Failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
       });
-      
-      navigate("/vote-confirmation");
-    }, 2000);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -74,12 +131,12 @@ export const BallotCard = ({ position, candidates }: BallotCardProps) => {
           <Button 
             onClick={handleSubmit} 
             className="w-full bg-vote-teal hover:bg-vote-blue transition-colors"
-            disabled={!selectedCandidate || isSubmitting}
+            disabled={!selectedCandidate || isSubmitting || !user} // Disable if not logged in
           >
             {isSubmitting ? (
               <>
                 <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                Recording Vote to Blockchain...
+                Recording Your Vote...
               </>
             ) : (
               <>
@@ -88,6 +145,7 @@ export const BallotCard = ({ position, candidates }: BallotCardProps) => {
               </>
             )}
           </Button>
+          {!user && <p className="text-xs text-red-500 mt-2 text-center">Please log in to cast your vote.</p>}
         </div>
       </CardContent>
     </Card>

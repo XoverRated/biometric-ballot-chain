@@ -95,10 +95,10 @@ const MOCK_ELECTIONS: ElectionMock[] = [
 
 const ElectionDetailPage = () => {
   const { id } = useParams<{ id: string }>();
-  const electionId = Number(id);
+  const electionIdParams = Number(id); // Renamed to avoid conflict with electionId prop later
 
   // Fallback to first election if specific ID not found or invalid (useful for mock, might need adjustment for real data)
-  const election = MOCK_ELECTIONS.find(e => e.id === electionId);
+  const election = MOCK_ELECTIONS.find(e => e.id === electionIdParams);
 
   if (!election) {
     // This should ideally redirect to a 404 page or show an error message
@@ -184,8 +184,7 @@ const ElectionDetailPage = () => {
             key={index}
             position={position.title}
             candidates={position.candidates}
-            // Potentially pass electionId if BallotCard needs it for submission
-            // electionId={election.dbElectionId} 
+            electionId={election.dbElectionId} // Pass the election's UUID
           />
         ))}
 
