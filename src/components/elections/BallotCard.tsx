@@ -63,11 +63,21 @@ export const BallotCard = ({ position, candidates, electionId }: BallotCardProps
 
       if (error) {
         console.error("Error casting vote:", error);
-        toast({
-          title: "Vote Casting Failed",
-          description: error.message || "Could not record your vote. Please try again.",
-          variant: "destructive",
-        });
+        
+        // Check if the error is due to the unique constraint violation (duplicate vote)
+        if (error.code === '23505' && error.message.includes('unique_voter_election_vote')) {
+          toast({
+            title: "Vote Already Cast",
+            description: "You have already voted in this election. Each voter can only cast one vote per election.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Vote Casting Failed",
+            description: error.message || "Could not record your vote. Please try again.",
+            variant: "destructive",
+          });
+        }
         setIsSubmitting(false);
         return;
       }
