@@ -1,8 +1,7 @@
-
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FingerprintIcon, Loader2Icon, ShieldCheckIcon, AlertCircleIcon } from "lucide-react";
+import { FingerprintIcon, Loader2Icon, ShieldCheckIcon, AlertCircleIcon, ExternalLinkIcon } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,22 +36,24 @@ const FingerprintDisplay = ({ isScanning }: { isScanning: boolean }) => {
 
 
 export const BiometricRegister = () => {
-  const [isScanning, setIsScanning] = useState(false); // "Scanning" here means "in the process of registration"
+  const [isScanning, setIsScanning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [biometricsAvailable, setBiometricsAvailable] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isIframeContext, setIsIframeContext] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
 
   useEffect(() => {
     if (!user) {
-      // Should not happen if navigation from RegisterForm is correct
-      // as signUp would have established a session.
       toast({ title: "User not found", description: "Please sign up again.", variant: "destructive" });
       navigate("/auth");
       return;
     }
+    
+    // Check if running in iframe context
+    setIsIframeContext(window !== window.top);
     checkBiometricSupport();
   }, [user, navigate, toast]);
 
@@ -100,11 +101,11 @@ export const BiometricRegister = () => {
 
       const creationOptions: PublicKeyCredentialCreationOptions = {
         rp: {
-          name: "VoteChain App", // Replace with your app name
+          name: "VoteChain App",
           id: window.location.hostname,
         },
         user: {
-          id: new TextEncoder().encode(user.id), // User ID must be ArrayBuffer
+          id: new TextEncoder().encode(user.id),
           name: user.email || "user@example.com",
           displayName: user.user_metadata?.full_name || user.email || "User",
         },
@@ -114,12 +115,12 @@ export const BiometricRegister = () => {
           { type: "public-key", alg: -257 }, // RS256
         ],
         authenticatorSelection: {
-          authenticatorAttachment: "platform", // Prefer platform authenticators (like Touch ID / Windows Hello)
+          authenticatorAttachment: "platform",
           userVerification: "required",
-          residentKey: "preferred", // If supported, creates a discoverable credential
+          residentKey: "preferred",
         },
         timeout: 60000,
-        attestation: "direct", // or "none" or "indirect"
+        attestation: "direct",
       };
 
       const credential = await navigator.credentials.create({ publicKey: creationOptions }) as PublicKeyCredential | null;
@@ -129,9 +130,6 @@ export const BiometricRegister = () => {
         setProgress(100);
         const credentialIdBase64 = bufferToBase64(credential.rawId);
 
-        // Store credentialId in user_metadata
-        // This is a simplification. In a real app, more data (public key, type, transports)
-        // would be sent to a backend to be stored securely.
         const { error: updateError } = await supabase.auth.updateUser({
           data: { biometric_credential_id: credentialIdBase64 }
         });
@@ -144,7 +142,7 @@ export const BiometricRegister = () => {
           title: "Biometric Registration Successful",
           description: "Your biometric credential has been registered.",
         });
-        // Navigate to biometric auth to immediately verify, or to elections
+        
         setTimeout(() => {
           setIsScanning(false);
           navigate("/biometric-auth"); 
@@ -158,7 +156,22 @@ export const BiometricRegister = () => {
       console.error("Biometric registration error:", err);
       setIsScanning(false);
       setProgress(0);
-      const errorMessage = err instanceof Error ? err.message : "An unknown error occurred during registration.";
+      
+      let errorMessage = "An unknown error occurred during registration.";
+      
+      if (err instanceof Error) {
+        if (err.name === "NotAllowedError") {
+          if (err.message.includes("publickey-credentials-create") || err.message.includes("Permissions Policy")) {
+            errorMessage = "Biometric registration is not available in this context. Please try opening the app in a new browser tab or window.";
+            setIsIframeContext(true);
+          } else {
+            errorMessage = "Biometric registration was denied or cancelled. Please ensure your device supports biometrics and try again.";
+          }
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
       setError(errorMessage);
       toast({
         title: "Biometric Registration Failed",
@@ -174,9 +187,13 @@ export const BiometricRegister = () => {
       description: "Proceeding without biometric registration. You can register later from settings.",
       variant: "default",
     });
-    navigate("/elections"); // Or to login, or wherever appropriate
+    navigate("/elections");
   };
 
+  const handleOpenInNewTab = () => {
+    const currentUrl = window.location.href;
+    window.open(currentUrl, '_blank');
+  };
 
   return (
     <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
@@ -189,6 +206,29 @@ export const BiometricRegister = () => {
           Set up fingerprint or face recognition for secure access.
         </p>
       </div>
+
+      {isIframeContext && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-start">
+            <AlertCircleIcon className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-medium text-blue-700">Browser Restrictions Detected</h3>
+              <p className="text-sm text-blue-600 mt-1 mb-3">
+                Biometric registration may not work properly in this context. For best results, open the app in a new browser tab.
+              </p>
+              <Button
+                onClick={handleOpenInNewTab}
+                variant="outline"
+                size="sm"
+                className="text-blue-600 border-blue-300 hover:bg-blue-50"
+              >
+                <ExternalLinkIcon className="h-4 w-4 mr-2" />
+                Open in New Tab
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {biometricsAvailable === false && (
         <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -266,4 +306,3 @@ export const BiometricRegister = () => {
     </div>
   );
 };
-
