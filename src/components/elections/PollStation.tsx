@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +13,7 @@ interface PollResult {
 }
 
 interface PollStationProps {
-  electionId: string; // This will likely be a UUID in a real scenario, but mock uses string/number
+  electionId: string;
 }
 
 export const PollStation = ({ electionId }: PollStationProps) => {
@@ -25,8 +26,11 @@ export const PollStation = ({ electionId }: PollStationProps) => {
     const fetchPollResults = async () => {
       setLoading(true);
       setError(null);
+      
       try {
-        // Fetch votes for the specific election, and get candidate names
+        console.log('Fetching poll results for election:', electionId);
+        
+        // Fetch votes for the specific election with candidate information
         const { data: votesData, error: voteError } = await supabase
           .from('votes')
           .select(`
@@ -38,49 +42,58 @@ export const PollStation = ({ electionId }: PollStationProps) => {
           `)
           .eq('election_id', electionId);
 
-        if (voteError) throw voteError;
+        if (voteError) {
+          console.error('Error fetching votes:', voteError);
+          throw voteError;
+        }
 
-        if (!votesData) {
+        console.log('Fetched votes data:', votesData);
+
+        if (!votesData || votesData.length === 0) {
+          console.log('No votes found for this election');
           setResults([]);
           setTotalVotes(0);
           setLoading(false);
           return;
         }
 
-        const voteCountsByCandidate: { [key: string]: { name: string; count: number } } = {};
-        let currentTotalVotes = 0;
-
+        // Count votes per candidate
+        const candidateVotes: { [candidateId: string]: { name: string; count: number } } = {};
+        
         votesData.forEach(vote => {
-          // Ensure vote.candidates is not null and has an id and name
-          if (vote.candidates && typeof vote.candidates.id === 'string' && typeof vote.candidates.name === 'string') {
-            currentTotalVotes++;
-            const candidateId = vote.candidates.id;
+          if (vote.candidates && vote.candidate_id) {
+            const candidateId = vote.candidate_id;
             const candidateName = vote.candidates.name;
-            if (!voteCountsByCandidate[candidateId]) {
-              voteCountsByCandidate[candidateId] = { name: candidateName, count: 0 };
+            
+            if (!candidateVotes[candidateId]) {
+              candidateVotes[candidateId] = {
+                name: candidateName,
+                count: 0
+              };
             }
-            voteCountsByCandidate[candidateId].count++;
+            candidateVotes[candidateId].count++;
           }
         });
-        
-        setTotalVotes(currentTotalVotes);
 
-        const pollResultsData = Object.values(voteCountsByCandidate).map(data => {
-            // Find the candidate_id associated with this candidate name and count
-            // This assumes candidate names are unique within an election for this aggregation logic
-            const candidateEntry = votesData.find(v => v.candidates?.name === data.name);
-            return {
-                candidateId: candidateEntry?.candidates?.id || 'unknown', // Fallback, ideally this is robust
-                candidateName: data.name,
-                voteCount: data.count,
-                percentage: currentTotalVotes > 0 ? (data.count / currentTotalVotes) * 100 : 0,
-            };
-        });
-        
-        // Sort results by vote count descending
-        pollResultsData.sort((a, b) => b.voteCount - a.voteCount);
+        const totalVotesCount = votesData.length;
+        setTotalVotes(totalVotesCount);
 
-        setResults(pollResultsData);
+        // Convert to PollResult array
+        const pollResults: PollResult[] = Object.entries(candidateVotes).map(([candidateId, data]) => ({
+          candidateId,
+          candidateName: data.name,
+          voteCount: data.count,
+          percentage: totalVotesCount > 0 ? (data.count / totalVotesCount) * 100 : 0,
+        }));
+
+        // Sort by vote count (highest first)
+        pollResults.sort((a, b) => b.voteCount - a.voteCount);
+
+        console.log('Processed poll results:', pollResults);
+        console.log('Total votes:', totalVotesCount);
+        
+        setResults(pollResults);
+        
       } catch (err: any) {
         console.error('Error fetching poll results:', err);
         setError(err.message || 'Could not fetch poll results');
@@ -91,12 +104,13 @@ export const PollStation = ({ electionId }: PollStationProps) => {
 
     fetchPollResults();
 
+    // Set up real-time subscription for vote changes
     const subscription = supabase
       .channel(`poll_station_election_${electionId}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
-        table: 'votes', // Corrected table name
+        table: 'votes',
         filter: `election_id=eq.${electionId}`
       }, (payload) => {
         console.log('Votes changed, refetching poll results:', payload);
@@ -134,7 +148,7 @@ export const PollStation = ({ electionId }: PollStationProps) => {
           <CardTitle>Live Poll Results</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-500 text-center py-4">No votes cast yet for this election or results are being tallied.</p>
+          <p className="text-gray-500 text-center py-4">No votes cast yet for this election.</p>
         </CardContent>
       </Card>
     );
@@ -166,6 +180,6 @@ export const PollStation = ({ electionId }: PollStationProps) => {
           </div>
         </div>
       </CardContent>
-    </Card>
-  );
+    );
+  }
 };
