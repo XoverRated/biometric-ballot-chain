@@ -141,7 +141,7 @@ export const PollStation = ({ electionId }: PollStationProps) => {
     );
   }
 
-  if (results.length === 0 && totalVotes === 0 && !loading) {
+  if (results.length === 0 && totalVotes === 0) {
     return (
       <Card>
         <CardHeader>
