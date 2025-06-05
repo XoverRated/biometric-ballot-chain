@@ -180,6 +180,6 @@ export const PollStation = ({ electionId }: PollStationProps) => {
           </div>
         </div>
       </CardContent>
-    );
-  }
+    </Card>
+  );
 };
