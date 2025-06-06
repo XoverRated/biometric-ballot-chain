@@ -30,7 +30,20 @@ export const PollStation = ({ electionId }: PollStationProps) => {
       try {
         console.log('Fetching poll results for election:', electionId);
         
-        // Fetch votes for the specific election with candidate information
+        // First, get all candidates for this election to ensure we show all candidates even if they have 0 votes
+        const { data: candidatesData, error: candidatesError } = await supabase
+          .from('candidates')
+          .select('id, name')
+          .eq('election_id', electionId);
+
+        if (candidatesError) {
+          console.error('Error fetching candidates:', candidatesError);
+          throw candidatesError;
+        }
+
+        console.log('Fetched candidates:', candidatesData);
+
+        // Fetch all votes for this election with candidate information
         const { data: votesData, error: voteError } = await supabase
           .from('votes')
           .select(`
@@ -49,33 +62,32 @@ export const PollStation = ({ electionId }: PollStationProps) => {
 
         console.log('Fetched votes data:', votesData);
 
-        if (!votesData || votesData.length === 0) {
-          console.log('No votes found for this election');
-          setResults([]);
-          setTotalVotes(0);
-          setLoading(false);
-          return;
-        }
-
-        // Count votes per candidate
+        // Initialize vote counts for all candidates
         const candidateVotes: { [candidateId: string]: { name: string; count: number } } = {};
         
-        votesData.forEach(vote => {
-          if (vote.candidates && vote.candidate_id) {
-            const candidateId = vote.candidate_id;
-            const candidateName = vote.candidates.name;
-            
-            if (!candidateVotes[candidateId]) {
-              candidateVotes[candidateId] = {
-                name: candidateName,
-                count: 0
-              };
-            }
-            candidateVotes[candidateId].count++;
-          }
-        });
+        // Initialize all candidates with 0 votes
+        if (candidatesData) {
+          candidatesData.forEach(candidate => {
+            candidateVotes[candidate.id] = {
+              name: candidate.name,
+              count: 0
+            };
+          });
+        }
 
-        const totalVotesCount = votesData.length;
+        // Count actual votes
+        if (votesData && votesData.length > 0) {
+          votesData.forEach(vote => {
+            if (vote.candidates && vote.candidate_id) {
+              const candidateId = vote.candidate_id;
+              if (candidateVotes[candidateId]) {
+                candidateVotes[candidateId].count++;
+              }
+            }
+          });
+        }
+
+        const totalVotesCount = votesData?.length || 0;
         setTotalVotes(totalVotesCount);
 
         // Convert to PollResult array
@@ -102,25 +114,28 @@ export const PollStation = ({ electionId }: PollStationProps) => {
       }
     };
 
-    fetchPollResults();
+    if (electionId) {
+      fetchPollResults();
 
-    // Set up real-time subscription for vote changes
-    const subscription = supabase
-      .channel(`poll_station_election_${electionId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'votes',
-        filter: `election_id=eq.${electionId}`
-      }, (payload) => {
-        console.log('Votes changed, refetching poll results:', payload);
-        fetchPollResults();
-      })
-      .subscribe();
+      // Set up real-time subscription for vote changes
+      const subscription = supabase
+        .channel(`poll_station_election_${electionId}`)
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'votes',
+          filter: `election_id=eq.${electionId}`
+        }, (payload) => {
+          console.log('Vote change detected, refetching poll results:', payload);
+          fetchPollResults();
+        })
+        .subscribe();
 
-    return () => {
-      subscription.unsubscribe();
-    };
+      return () => {
+        console.log('Unsubscribing from real-time updates');
+        subscription.unsubscribe();
+      };
+    }
   }, [electionId]);
 
   if (loading) {
@@ -141,14 +156,14 @@ export const PollStation = ({ electionId }: PollStationProps) => {
     );
   }
 
-  if (results.length === 0 && totalVotes === 0) {
+  if (results.length === 0) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Live Poll Results</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-500 text-center py-4">No votes cast yet for this election.</p>
+          <p className="text-gray-500 text-center py-4">No candidates found for this election.</p>
         </CardContent>
       </Card>
     );
