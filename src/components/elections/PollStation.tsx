@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,7 +29,7 @@ export const PollStation = ({ electionId }: PollStationProps) => {
       try {
         console.log('Fetching poll results for election:', electionId);
         
-        // First, get all candidates for this election to ensure we show all candidates even if they have 0 votes
+        // First, get all candidates for this election
         const { data: candidatesData, error: candidatesError } = await supabase
           .from('candidates')
           .select('id, name')
@@ -43,16 +42,10 @@ export const PollStation = ({ electionId }: PollStationProps) => {
 
         console.log('Fetched candidates:', candidatesData);
 
-        // Fetch all votes for this election with candidate information
+        // Then get vote counts for each candidate using a separate query
         const { data: votesData, error: voteError } = await supabase
           .from('votes')
-          .select(`
-            candidate_id,
-            candidates (
-              id,
-              name
-            )
-          `)
+          .select('candidate_id')
           .eq('election_id', electionId);
 
         if (voteError) {
@@ -75,14 +68,11 @@ export const PollStation = ({ electionId }: PollStationProps) => {
           });
         }
 
-        // Count actual votes
+        // Count votes for each candidate
         if (votesData && votesData.length > 0) {
           votesData.forEach(vote => {
-            if (vote.candidates && vote.candidate_id) {
-              const candidateId = vote.candidate_id;
-              if (candidateVotes[candidateId]) {
-                candidateVotes[candidateId].count++;
-              }
+            if (vote.candidate_id && candidateVotes[vote.candidate_id]) {
+              candidateVotes[vote.candidate_id].count++;
             }
           });
         }
