@@ -1,3 +1,4 @@
+
 import { MainLayout } from "@/components/layout/MainLayout";
 import { BallotCard } from "@/components/elections/BallotCard";
 import { Link, useParams } from "react-router-dom";
@@ -40,9 +41,9 @@ const MOCK_ELECTIONS: ElectionMock[] = [
       {
         title: "COICT Ex-COM Representative",
         candidates: [
-          { id: "c01c7000-0001-0000-0000-000000000001", name: "Reagan Jonathan Peter", party: "Progress Party" },
-          { id: "c01c7000-0001-0000-0000-000000000002", name: "Joseph Daniel Mwakyoma", party: "Citizens Alliance" },
-          { id: "c01c7000-0001-0000-0000-000000000003", name: "Isack Godfrey Lyanga", party: "Independent Voice" },
+          { id: "c01c7000-0001-0000-0000-000000000001", name: "Reagan Jonathan Peter", party: "BSc. in CS" },
+          { id: "c01c7000-0001-0000-0000-000000000002", name: "Joseph Daniel Mwakyoma", party: "BSc. in CEIT" },
+          { id: "c01c7000-0001-0000-0000-000000000003", name: "Isack Godfrey Lyanga", party: "BSc. in BIT" },
         ],
       },
     ],
@@ -60,9 +61,9 @@ const MOCK_ELECTIONS: ElectionMock[] = [
       {
         title: "UDSM-COICT Foreign Ambassador",
         candidates: [
-          { id: "c01c7000-0002-0000-0000-000000000001", name: "Juan Isack Jumbe", party: "Education First" },
-          { id: "c01c7000-0002-0000-0000-000000000002", name: "Dismas Ferdinand Shange", party: "Community Voice" },
-          { id: "c01c7000-0002-0000-0000-000000000003", name: "Irene Sylvester Wambura", party: "Future Leaders Now" },
+          { id: "c01c7000-0002-0000-0000-000000000001", name: "Juan Isack Jumbe", party: "BSc. in TE" },
+          { id: "c01c7000-0002-0000-0000-000000000002", name: "Dismas Ferdinand Shange", party: "BSc. in EE" },
+          { id: "c01c7000-0002-0000-0000-000000000003", name: "Irene Sylvester Wambura", party: "BSc. in CS" },
         ],
       },
     ],
@@ -80,9 +81,9 @@ const MOCK_ELECTIONS: ElectionMock[] = [
       {
         title: "State Senator - Primary",
         candidates: [
-          { id: "c01c7000-0003-0000-0000-000000000001", name: "Michael P. Candidate", party: "Blue Party" },
-          { id: "c01c7000-0003-0000-0000-000000000002", name: "Laura K. Aspirant", party: "Red Party" },
-          { id: "c01c7000-0003-0000-0000-000000000003", name: "David R. Hopeful", party: "Green Initiative" },
+          { id: "c01c7000-0003-0000-0000-000000000001", name: "Michael P. Candidate", party: "BSc. in CEIT" },
+          { id: "c01c7000-0003-0000-0000-000000000002", name: "Laura K. Aspirant", party: "BSc. in BIT" },
+          { id: "c01c7000-0003-0000-0000-000000000003", name: "David R. Hopeful", party: "BSc. in TE" },
         ],
       },
     ],
