@@ -45,7 +45,12 @@ export const useBiometricAuth = (frameHistoryRef: React.RefObject<ImageData[]>, 
         onProgress: (progress, checkIndex, status) => {
           setAuthProgress(progress);
           if (checkIndex !== undefined && status) {
-            updateSecurityCheck(checkIndex, status);
+            // Convert string status to proper SecurityCheck status type
+            const validStatus: SecurityCheck['status'] = 
+              status === 'checking' ? 'checking' :
+              status === 'passed' ? 'passed' :
+              status === 'failed' ? 'failed' : 'pending';
+            updateSecurityCheck(checkIndex, validStatus);
           }
         }
       });
