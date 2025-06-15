@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import Index from "@/pages/Index";
@@ -23,6 +22,7 @@ import NotFound from "@/pages/NotFound";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminRoute } from "@/components/auth/AdminRoute";
+import { BiometricProtectedRoute } from "@/components/auth/BiometricProtectedRoute";
 
 const App = () => {
   return (
@@ -34,10 +34,10 @@ const App = () => {
           
           <Route path="/face-auth" element={<ProtectedRoute><FaceAuthPage /></ProtectedRoute>} />
           <Route path="/face-register" element={<ProtectedRoute><FaceRegisterPage /></ProtectedRoute>} />
-          <Route path="/elections" element={<ProtectedRoute><ElectionsPage /></ProtectedRoute>} />
-          <Route path="/elections/:id" element={<ProtectedRoute><ElectionDetailPage /></ProtectedRoute>} />
-          <Route path="/vote-confirmation" element={<ProtectedRoute><VoteConfirmationPage /></ProtectedRoute>} />
-          <Route path="/verify" element={<ProtectedRoute><VerifyPage /></ProtectedRoute>} />
+          <Route path="/elections" element={<BiometricProtectedRoute><ElectionsPage /></BiometricProtectedRoute>} />
+          <Route path="/elections/:id" element={<BiometricProtectedRoute><ElectionDetailPage /></BiometricProtectedRoute>} />
+          <Route path="/vote-confirmation" element={<BiometricProtectedRoute><VoteConfirmationPage /></BiometricProtectedRoute>} />
+          <Route path="/verify" element={<BiometricProtectedRoute><VerifyPage /></BiometricProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 
