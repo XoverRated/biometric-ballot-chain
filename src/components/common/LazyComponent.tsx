@@ -8,13 +8,13 @@ interface LazyComponentProps {
   errorFallback?: React.ReactNode;
 }
 
-export const createLazyComponent = <T extends ComponentType<any>>(
-  importFn: () => Promise<{ default: T }>,
+export const createLazyComponent = (
+  importFn: () => Promise<{ default: ComponentType<any> }>,
   fallback?: React.ReactNode
 ) => {
   const LazyComponent = lazy(importFn);
   
-  return (props: React.ComponentProps<T> & LazyComponentProps) => {
+  return (props: LazyComponentProps & Record<string, any>) => {
     const { fallback: customFallback, errorFallback, ...componentProps } = props;
     
     return (
@@ -29,7 +29,7 @@ export const createLazyComponent = <T extends ComponentType<any>>(
 
 // Pre-built lazy components for common heavy components
 export const LazyEnhancedBiometricAuth = createLazyComponent(
-  () => import("../auth/EnhancedBiometricAuth"),
+  () => import("../auth/EnhancedBiometricAuth").then(module => ({ default: module.EnhancedBiometricAuth })),
   <LoadingState 
     title="Loading Enhanced Authentication" 
     description="Initializing advanced biometric security..." 
@@ -37,7 +37,7 @@ export const LazyEnhancedBiometricAuth = createLazyComponent(
 );
 
 export const LazyEnhancedBiometricRegister = createLazyComponent(
-  () => import("../auth/EnhancedBiometricRegister"),
+  () => import("../auth/EnhancedBiometricRegister").then(module => ({ default: module.EnhancedBiometricRegister })),
   <LoadingState 
     title="Loading Registration System" 
     description="Preparing biometric registration..." 
@@ -45,7 +45,7 @@ export const LazyEnhancedBiometricRegister = createLazyComponent(
 );
 
 export const LazyLogViewer = createLazyComponent(
-  () => import("../debug/LogViewer"),
+  () => import("../debug/LogViewer").then(module => ({ default: module.LogViewer })),
   <LoadingState 
     title="Loading Log Viewer" 
     description="Initializing debugging tools..." 
