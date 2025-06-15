@@ -1,5 +1,5 @@
-
 import { ethers } from 'ethers';
+import '../types/ethereum';
 import { useWeb3 } from '@/contexts/Web3Context';
 
 // Real smart contract ABI
