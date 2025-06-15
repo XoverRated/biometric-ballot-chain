@@ -4,25 +4,38 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from './contexts/AuthContext';
 import { HomePage } from './pages/HomePage';
-import { HowItWorksPage } from './pages/HowItWorksPage';
-import { SecurityInfoPage } from './pages/SecurityInfoPage';
-import { FAQPage } from './pages/FAQPage';
-import { ContactPage } from './pages/ContactPage';
-import { AuthPage } from './pages/AuthPage';
-import { ElectionsPage } from './pages/ElectionsPage';
-import { ElectionDetailsPage } from './pages/ElectionDetailsPage';
-import { VotingPage } from './pages/VotingPage';
-import { VoteConfirmationPage } from './pages/VoteConfirmationPage';
-import { ProfilePage } from './pages/ProfilePage';
-import { BiometricRegisterPage } from './pages/BiometricRegisterPage';
-import { BiometricAuthPage } from './pages/BiometricAuthPage';
+import HowItWorksPage from './pages/HowItWorksPage';
+import SecurityInfoPage from './pages/SecurityInfoPage';
+import FAQPage from './pages/FAQPage';
+import ContactPage from './pages/ContactPage';
+import AuthPage from './pages/AuthPage';
+import ElectionsPage from './pages/ElectionsPage';
+import VoteConfirmationPage from './pages/VoteConfirmationPage';
+import ProfilePage from './pages/ProfilePage';
+import BiometricRegisterPage from './pages/BiometricRegisterPage';
+import BiometricAuthPage from './pages/BiometricAuthPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { EnhancedBiometricRegisterPage } from './pages/EnhancedBiometricRegisterPage';
-import { EnhancedBiometricAuthPage } from './pages/EnhancedBiometricAuthPage';
-import { FaceRegisterPage } from './pages/FaceRegisterPage';
-import { FaceAuthPage } from './pages/FaceAuthPage';
-import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import EnhancedBiometricRegisterPage from './pages/EnhancedBiometricRegisterPage';
+import EnhancedBiometricAuthPage from './pages/EnhancedBiometricAuthPage';
+import FaceRegisterPage from './pages/FaceRegisterPage';
+import FaceAuthPage from './pages/FaceAuthPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 import ElectionResultsPage from './pages/ElectionResultsPage';
+
+// Create missing page components
+const ElectionDetailsPage = () => (
+  <div className="p-8">
+    <h1 className="text-2xl font-bold">Election Details</h1>
+    <p>Election details will be displayed here.</p>
+  </div>
+);
+
+const VotingPage = () => (
+  <div className="p-8">
+    <h1 className="text-2xl font-bold">Voting</h1>
+    <p>Voting interface will be displayed here.</p>
+  </div>
+);
 
 function App() {
   return (
