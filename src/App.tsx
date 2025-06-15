@@ -3,8 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import Index from "@/pages/Index";
 import AuthPage from "@/pages/AuthPage";
-import BiometricAuthPage from "@/pages/BiometricAuthPage";
-import BiometricRegisterPage from "@/pages/BiometricRegisterPage";
+import FaceAuthPage from "@/pages/FaceAuthPage";
+import FaceRegisterPage from "@/pages/FaceRegisterPage";
 import ElectionsPage from "@/pages/ElectionsPage";
 import ElectionDetailPage from "@/pages/ElectionDetailPage";
 import VoteConfirmationPage from "@/pages/VoteConfirmationPage";
@@ -18,11 +18,11 @@ import ContactPage from "@/pages/ContactPage";
 import ProfilePage from "@/pages/ProfilePage";
 import SettingsPage from "@/pages/SettingsPage";
 import AboutUsPage from "@/pages/AboutUsPage";
-import AdminDashboardPage from "@/pages/AdminDashboardPage"; // New
+import AdminDashboardPage from "@/pages/AdminDashboardPage";
 import NotFound from "@/pages/NotFound";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute"; // Assuming you have this
-import { AdminRoute } from "@/components/auth/AdminRoute"; // New
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { AdminRoute } from "@/components/auth/AdminRoute";
 
 const App = () => {
   return (
@@ -32,8 +32,8 @@ const App = () => {
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<AuthPage />} />
           
-          <Route path="/biometric-auth" element={<ProtectedRoute><BiometricAuthPage /></ProtectedRoute>} />
-          <Route path="/biometric-register" element={<ProtectedRoute><BiometricRegisterPage /></ProtectedRoute>} />
+          <Route path="/face-auth" element={<ProtectedRoute><FaceAuthPage /></ProtectedRoute>} />
+          <Route path="/face-register" element={<ProtectedRoute><FaceRegisterPage /></ProtectedRoute>} />
           <Route path="/elections" element={<ProtectedRoute><ElectionsPage /></ProtectedRoute>} />
           <Route path="/elections/:id" element={<ProtectedRoute><ElectionDetailPage /></ProtectedRoute>} />
           <Route path="/vote-confirmation" element={<ProtectedRoute><VoteConfirmationPage /></ProtectedRoute>} />
@@ -60,4 +60,3 @@ const App = () => {
 };
 
 export default App;
-
