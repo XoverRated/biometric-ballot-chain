@@ -41,14 +41,11 @@ export const trapFocus = (element: HTMLElement) => {
   };
 };
 
-export const skipLink = (targetId: string, label: string = 'Skip to main content') => {
-  return (
-    <a
-      href={`#${targetId}`}
-      className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-vote-blue text-white px-4 py-2 rounded z-50"
-      onFocus={(e) => announceToScreenReader(`${label} link focused`)}
-    >
-      {label}
-    </a>
-  );
+export const createSkipLink = (targetId: string, label: string = 'Skip to main content') => {
+  return {
+    href: `#${targetId}`,
+    className: "sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-vote-blue text-white px-4 py-2 rounded z-50",
+    label,
+    onFocus: () => announceToScreenReader(`${label} link focused`)
+  };
 };

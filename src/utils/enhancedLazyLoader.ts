@@ -43,35 +43,29 @@ export const createEnhancedLazyComponent = <T extends ComponentType<any>>(
   }
 
   return (props: Record<string, any>) => {
-    const defaultFallback = (
-      <LoadingState 
-        title={loadingMessage}
-        aria-live="polite"
-        role="status"
-      />
-    );
+    const defaultFallback = React.createElement(LoadingState, {
+      title: loadingMessage,
+      'aria-live': 'polite',
+      role: 'status'
+    });
 
-    const defaultErrorFallback = (
-      <div role="alert" className="p-4 text-red-600 bg-red-50 rounded">
-        {errorMessage}
-      </div>
-    );
+    const defaultErrorFallback = React.createElement('div', {
+      role: 'alert',
+      className: 'p-4 text-red-600 bg-red-50 rounded',
+      children: errorMessage
+    });
 
-    return (
-      <ErrorBoundary 
-        fallback={errorFallback || defaultErrorFallback}
-        onError={() => announceToScreenReader(errorMessage, 'assertive')}
-      >
-        <Suspense 
-          fallback={fallback || defaultFallback}
-        >
-          <LazyComponent 
-            {...props} 
-            onMount={() => announceToScreenReader(`${loadingMessage.replace('Loading', 'Loaded')}`, 'polite')}
-          />
-        </Suspense>
-      </ErrorBoundary>
-    );
+    return React.createElement(ErrorBoundary, {
+      fallback: errorFallback || defaultErrorFallback,
+      onError: () => announceToScreenReader(errorMessage, 'assertive'),
+      children: React.createElement(Suspense, {
+        fallback: fallback || defaultFallback,
+        children: React.createElement(LazyComponent, {
+          ...props,
+          onMount: () => announceToScreenReader(`${loadingMessage.replace('Loading', 'Loaded')}`, 'polite')
+        })
+      })
+    });
   };
 };
 

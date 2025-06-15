@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster"
@@ -21,7 +20,7 @@ import FaceRegisterPage from './pages/FaceRegisterPage';
 import FaceAuthPage from './pages/FaceAuthPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import ElectionResultsPage from './pages/ElectionResultsPage';
-import { skipLink } from './utils/accessibility';
+import { SkipLink } from './components/common/SkipLink';
 
 // Create missing page components
 const ElectionDetailsPage = () => (
@@ -47,7 +46,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <div className="min-h-screen bg-gray-50">
-          {skipLink('main-content')}
+          <SkipLink targetId="main-content" />
           <Toaster />
           <Routes>
             {/* Public routes */}
