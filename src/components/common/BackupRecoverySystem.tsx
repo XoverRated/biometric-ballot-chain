@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   DatabaseIcon, 
   DownloadIcon, 
-  Uploa dIcon, 
+  UploadIcon, 
   ShieldCheckIcon, 
   AlertTriangleIcon,
   CheckCircleIcon,
