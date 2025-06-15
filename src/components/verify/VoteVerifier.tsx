@@ -66,7 +66,7 @@ export const VoteVerifier = () => {
         return;
       }
 
-      if (data && data.candidates && data.elections) {
+      if (data) {
         // Now verify on blockchain
         let blockchainVerified = false;
         try {
