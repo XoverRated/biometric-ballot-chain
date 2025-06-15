@@ -1,6 +1,7 @@
 
 import { RealBlockchainService } from '../realBlockchainService';
 import { ethers } from 'ethers';
+import { setupBlockchainMocks, mockBlockchainProvider, mockBlockchainContract } from '@/test-utils/blockchain-mocks';
 
 // Mock ethers
 jest.mock('ethers', () => ({
@@ -14,48 +15,22 @@ jest.mock('ethers', () => ({
 
 describe('RealBlockchainService', () => {
   let service: RealBlockchainService;
-  let mockProvider: jest.Mocked<ethers.BrowserProvider>;
-  let mockSigner: jest.Mocked<ethers.Signer>;
-  let mockContract: jest.Mocked<ethers.Contract>;
+  let mockProvider: any;
+  let mockSigner: any;
+  let mockContract: any;
 
   beforeEach(() => {
+    setupBlockchainMocks();
     service = new RealBlockchainService('0x123456789');
     
-    mockProvider = {
-      getCode: jest.fn().mockResolvedValue('0x608060405234801561001057600080fd5b50'),
-    } as any;
-
-    mockSigner = {} as any;
-
-    mockContract = {
-      hasVoted: jest.fn().mockResolvedValue(false),
-      castVote: {
-        estimateGas: jest.fn().mockResolvedValue(BigInt(21000)),
-      },
-      interface: {
-        parseLog: jest.fn().mockReturnValue({
-          name: 'VoteCast',
-          args: { voteHash: '0xabcdef' },
-        }),
-      },
-    } as any;
-
-    mockContract.castVote = jest.fn().mockResolvedValue({
-      hash: '0x123456789',
-      wait: jest.fn().mockResolvedValue({
-        blockNumber: 123,
-        hash: '0x123456789',
-        gasUsed: BigInt(21000),
-        logs: [{ topics: [], data: '' }],
-      }),
-    });
-
-    (ethers.Contract as jest.Mock).mockReturnValue(mockContract);
+    mockProvider = mockBlockchainProvider;
+    mockSigner = {};
+    mockContract = mockBlockchainContract;
   });
 
   describe('initialize', () => {
     it('should initialize successfully with valid contract', async () => {
-      await service.initialize(mockProvider, mockSigner);
+      await service.initialize(mockProvider as any, mockSigner as any);
       
       expect(mockProvider.getCode).toHaveBeenCalledWith('0x123456789');
       expect(ethers.Contract).toHaveBeenCalled();
@@ -64,14 +39,14 @@ describe('RealBlockchainService', () => {
     it('should throw error if contract is not deployed', async () => {
       mockProvider.getCode.mockResolvedValue('0x');
       
-      await expect(service.initialize(mockProvider, mockSigner))
+      await expect(service.initialize(mockProvider as any, mockSigner as any))
         .rejects.toThrow('Contract not deployed at specified address');
     });
   });
 
   describe('castVote', () => {
     beforeEach(async () => {
-      await service.initialize(mockProvider, mockSigner);
+      await service.initialize(mockProvider as any, mockSigner as any);
     });
 
     it('should cast vote successfully', async () => {
@@ -103,11 +78,11 @@ describe('RealBlockchainService', () => {
 
   describe('verifyVote', () => {
     beforeEach(async () => {
-      await service.initialize(mockProvider, mockSigner);
+      await service.initialize(mockProvider as any, mockSigner as any);
     });
 
     it('should verify vote successfully', async () => {
-      mockContract.verifyVote = jest.fn().mockResolvedValue([
+      mockContract.verifyVote.mockResolvedValue([
         true,
         'election-1',
         'candidate-1',
@@ -123,7 +98,7 @@ describe('RealBlockchainService', () => {
     });
 
     it('should return false for non-existent vote', async () => {
-      mockContract.verifyVote = jest.fn().mockResolvedValue([
+      mockContract.verifyVote.mockResolvedValue([
         false,
         '',
         '',

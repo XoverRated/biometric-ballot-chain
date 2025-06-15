@@ -13,15 +13,20 @@ export const mockBlockchainSigner = {
 
 export const mockBlockchainContract = {
   hasVoted: jest.fn().mockResolvedValue(false),
-  castVote: jest.fn().mockResolvedValue({
-    hash: '0x123456789',
-    wait: jest.fn().mockResolvedValue({
-      blockNumber: 123,
+  castVote: Object.assign(
+    jest.fn().mockResolvedValue({
       hash: '0x123456789',
-      gasUsed: BigInt(21000),
-      logs: [],
+      wait: jest.fn().mockResolvedValue({
+        blockNumber: 123,
+        hash: '0x123456789',
+        gasUsed: BigInt(21000),
+        logs: [],
+      }),
     }),
-  }),
+    {
+      estimateGas: jest.fn().mockResolvedValue(BigInt(21000)),
+    }
+  ),
   verifyVote: jest.fn().mockResolvedValue([true, 'election-1', 'candidate-1', BigInt(1234567890)]),
   getVoteCount: jest.fn().mockResolvedValue(BigInt(10)),
   createElection: jest.fn().mockResolvedValue({
@@ -30,12 +35,18 @@ export const mockBlockchainContract = {
       hash: '0x987654321',
     }),
   }),
+  interface: {
+    parseLog: jest.fn().mockReturnValue({
+      name: 'VoteCast',
+      args: { voteHash: '0xabcdef' },
+    }),
+  },
 };
 
 export const setupBlockchainMocks = () => {
-  // Mock ethers
-  (ethers.BrowserProvider as jest.Mock) = jest.fn().mockImplementation(() => mockBlockchainProvider);
-  (ethers.Contract as jest.Mock) = jest.fn().mockImplementation(() => mockBlockchainContract);
+  // Mock ethers with proper typing
+  jest.mocked(ethers.BrowserProvider as any).mockImplementation(() => mockBlockchainProvider);
+  jest.mocked(ethers.Contract as any).mockImplementation(() => mockBlockchainContract);
   
   // Mock window.ethereum
   Object.defineProperty(window, 'ethereum', {
