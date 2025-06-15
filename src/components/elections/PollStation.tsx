@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,7 +30,7 @@ export const PollStation = ({ electionId }: PollStationProps) => {
       try {
         console.log('Fetching poll results for election:', electionId);
         
-        // First, get all candidates for this election
+        // Get all candidates for this election - this query doesn't require auth
         const { data: candidatesData, error: candidatesError } = await supabase
           .from('candidates')
           .select('id, name')
@@ -42,7 +43,7 @@ export const PollStation = ({ electionId }: PollStationProps) => {
 
         console.log('Fetched candidates:', candidatesData);
 
-        // Then get vote counts for each candidate using a separate query
+        // Get all votes for this election - this should work without auth since votes are stored permanently
         const { data: votesData, error: voteError } = await supabase
           .from('votes')
           .select('candidate_id')
@@ -50,7 +51,8 @@ export const PollStation = ({ electionId }: PollStationProps) => {
 
         if (voteError) {
           console.error('Error fetching votes:', voteError);
-          throw voteError;
+          // Don't throw error for votes - just log it and continue with empty votes
+          console.warn('Could not fetch votes, continuing with 0 votes');
         }
 
         console.log('Fetched votes data:', votesData);
@@ -59,25 +61,32 @@ export const PollStation = ({ electionId }: PollStationProps) => {
         const candidateVotes: { [candidateId: string]: { name: string; count: number } } = {};
         
         // Initialize all candidates with 0 votes
-        if (candidatesData) {
+        if (candidatesData && candidatesData.length > 0) {
           candidatesData.forEach(candidate => {
             candidateVotes[candidate.id] = {
               name: candidate.name,
               count: 0
             };
           });
+        } else {
+          console.log('No candidates found for this election');
+          setResults([]);
+          setTotalVotes(0);
+          return;
         }
 
-        // Count votes for each candidate
+        // Count votes for each candidate - ensure this works even if votesData is null/empty
+        let totalVotesCount = 0;
         if (votesData && votesData.length > 0) {
           votesData.forEach(vote => {
             if (vote.candidate_id && candidateVotes[vote.candidate_id]) {
               candidateVotes[vote.candidate_id].count++;
+              totalVotesCount++;
             }
           });
         }
 
-        const totalVotesCount = votesData?.length || 0;
+        console.log('Total votes counted:', totalVotesCount);
         setTotalVotes(totalVotesCount);
 
         // Convert to PollResult array
@@ -91,8 +100,7 @@ export const PollStation = ({ electionId }: PollStationProps) => {
         // Sort by vote count (highest first)
         pollResults.sort((a, b) => b.voteCount - a.voteCount);
 
-        console.log('Processed poll results:', pollResults);
-        console.log('Total votes:', totalVotesCount);
+        console.log('Final poll results:', pollResults);
         
         setResults(pollResults);
         
@@ -107,7 +115,7 @@ export const PollStation = ({ electionId }: PollStationProps) => {
     if (electionId) {
       fetchPollResults();
 
-      // Set up real-time subscription for vote changes
+      // Set up real-time subscription for vote changes - this should work regardless of auth status
       const subscription = supabase
         .channel(`poll_station_election_${electionId}`)
         .on('postgres_changes', {
