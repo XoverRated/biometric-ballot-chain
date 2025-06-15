@@ -20,25 +20,25 @@ export const useEnhancedBiometricAuth = () => {
       name: 'Liveness Detection',
       status: 'pending',
       description: 'Verifying live human presence',
-      icon: <Eye className="h-4 w-4" />
+      icon: Eye({ className: "h-4 w-4" })
     },
     {
       name: 'Anti-Spoofing',
       status: 'pending',
       description: 'Detecting photo/video attacks',
-      icon: <Shield className="h-4 w-4" />
+      icon: Shield({ className: "h-4 w-4" })
     },
     {
       name: 'Quality Assessment',
       status: 'pending',
       description: 'Analyzing image quality',
-      icon: <Camera className="h-4 w-4" />
+      icon: Camera({ className: "h-4 w-4" })
     },
     {
       name: 'Face Matching',
       status: 'pending',
       description: 'Compare with registered face',
-      icon: <Zap className="h-4 w-4" />
+      icon: Zap({ className: "h-4 w-4" })
     }
   ]);
   
