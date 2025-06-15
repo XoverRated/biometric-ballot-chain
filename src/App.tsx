@@ -21,19 +21,24 @@ import FaceRegisterPage from './pages/FaceRegisterPage';
 import FaceAuthPage from './pages/FaceAuthPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import ElectionResultsPage from './pages/ElectionResultsPage';
+import { skipLink } from './utils/accessibility';
 
 // Create missing page components
 const ElectionDetailsPage = () => (
   <div className="p-8">
-    <h1 className="text-2xl font-bold">Election Details</h1>
-    <p>Election details will be displayed here.</p>
+    <main id="main-content">
+      <h1 className="text-2xl font-bold">Election Details</h1>
+      <p>Election details will be displayed here.</p>
+    </main>
   </div>
 );
 
 const VotingPage = () => (
   <div className="p-8">
-    <h1 className="text-2xl font-bold">Voting</h1>
-    <p>Voting interface will be displayed here.</p>
+    <main id="main-content">
+      <h1 className="text-2xl font-bold">Voting</h1>
+      <p>Voting interface will be displayed here.</p>
+    </main>
   </div>
 );
 
@@ -42,6 +47,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <div className="min-h-screen bg-gray-50">
+          {skipLink('main-content')}
           <Toaster />
           <Routes>
             {/* Public routes */}
