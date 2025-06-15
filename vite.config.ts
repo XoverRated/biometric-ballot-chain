@@ -22,8 +22,7 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: [
-      '@tensorflow/tfjs',
-      '@tensorflow-models/face-detection'
+      '@tensorflow/tfjs'
     ]
   },
   build: {
