@@ -3,19 +3,19 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { SectionHeading } from "@/components/common/SectionHeading";
 import { ProcessStepCard } from "@/components/common/ProcessStepCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FingerprintIcon, ShieldCheckIcon, LockIcon, NetworkIcon, VoteIcon, SearchIcon } from "lucide-react";
+import { ScanFaceIcon, ShieldCheckIcon, LockIcon, NetworkIcon, VoteIcon, SearchIcon } from "lucide-react";
 
 const HowItWorksPage = () => {
   const votingSteps = [
     {
       number: 1,
       title: "Register & Verify Identity",
-      description: "Create an account and complete identity verification with your government ID and biometric data.",
+      description: "Create an account and complete identity verification with your government ID and facial recognition data.",
     },
     {
       number: 2,
       title: "Secure Authentication",
-      description: "Sign in with your credentials and verify your identity with biometric authentication.",
+      description: "Sign in with your credentials and verify your identity with facial recognition authentication.",
     },
     {
       number: 3,
@@ -67,7 +67,7 @@ const HowItWorksPage = () => {
       <div className="max-w-6xl mx-auto">
         <SectionHeading
           title="How BiometricBallot Works"
-          subtitle="Our secure electronic voting system combines biometric verification with blockchain technology to ensure security, transparency, and accessibility."
+          subtitle="Our secure electronic voting system combines facial recognition with blockchain technology to ensure security, transparency, and accessibility."
           centered
         />
 
@@ -108,21 +108,21 @@ const HowItWorksPage = () => {
           <div className="bg-white p-8 rounded-lg shadow-md">
             <div className="flex items-center mb-6">
               <div className="bg-vote-light p-3 rounded-full">
-                <FingerprintIcon className="h-8 w-8 text-vote-teal" />
+                <ScanFaceIcon className="h-8 w-8 text-vote-teal" />
               </div>
-              <h2 className="text-2xl font-bold text-vote-blue ml-4">Biometric Security</h2>
+              <h2 className="text-2xl font-bold text-vote-blue ml-4">Facial Recognition Security</h2>
             </div>
             <p className="text-gray-600 mb-6">
-              Our system uses advanced biometric verification to ensure that only registered voters can access their ballots, eliminating the possibility of impersonation or fraudulent voting.
+              Our system uses advanced facial recognition technology to ensure that only registered voters can access their ballots, eliminating the possibility of impersonation or fraudulent voting.
             </p>
             <ul className="space-y-2 text-gray-600">
               <li className="flex items-start">
                 <span className="text-vote-teal mr-2">•</span>
-                <span>Fingerprint and facial recognition</span>
+                <span>Advanced facial recognition algorithms</span>
               </li>
               <li className="flex items-start">
                 <span className="text-vote-teal mr-2">•</span>
-                <span>Encrypted biometric data storage</span>
+                <span>Encrypted facial template storage</span>
               </li>
               <li className="flex items-start">
                 <span className="text-vote-teal mr-2">•</span>
@@ -130,7 +130,7 @@ const HowItWorksPage = () => {
               </li>
               <li className="flex items-start">
                 <span className="text-vote-teal mr-2">•</span>
-                <span>Zero-knowledge proofs for privacy</span>
+                <span>Liveness detection and anti-spoofing</span>
               </li>
             </ul>
           </div>
