@@ -1,108 +1,87 @@
 
 import { Link } from "react-router-dom";
-import { FingerprintIcon, TwitterIcon, GithubIcon, LinkedinIcon, MailIcon } from "lucide-react";
+import { FingerprintIcon, GithubIcon, TwitterIcon, FacebookIcon } from "lucide-react";
 
 export const Footer = () => {
   return (
-    <footer className="bg-gray-900 text-white">
-      <div className="container mx-auto px-4 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Brand */}
-          <div className="col-span-1 md:col-span-2">
-            <Link to="/" className="flex items-center space-x-3 mb-6">
-              <div className="bg-gradient-to-br from-vote-blue to-vote-teal rounded-xl p-3">
-                <FingerprintIcon className="h-8 w-8 text-white" />
+    <footer className="bg-vote-blue text-white pt-12 pb-6">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Logo and tagline */}
+          <div className="col-span-1 md:col-span-1">
+            <div className="flex items-center space-x-2 mb-4">
+              <div className="bg-white rounded-full p-2">
+                <FingerprintIcon className="h-6 w-6 text-vote-blue" />
               </div>
-              <div>
-                <span className="font-bold text-2xl bg-gradient-to-r from-vote-blue to-vote-teal bg-clip-text text-transparent">
-                  BiometricBallot
-                </span>
-                <div className="text-sm text-gray-400">Secure Digital Voting Platform</div>
-              </div>
-            </Link>
-            
-            <p className="text-gray-300 text-lg leading-relaxed max-w-md mb-6">
-              Revolutionizing democracy with biometric security, blockchain transparency, 
-              and accessible voting technology for the digital age.
+              <span className="font-bold text-xl">BiometricBallot</span>
+            </div>
+            <p className="text-gray-300 text-sm">
+              Secure, transparent electronic voting powered by blockchain and biometrics.
             </p>
-
-            {/* Social Links */}
-            <div className="flex space-x-4">
-              {[
-                { icon: TwitterIcon, href: "#", label: "Twitter" },
-                { icon: GithubIcon, href: "#", label: "GitHub" },
-                { icon: LinkedinIcon, href: "#", label: "LinkedIn" },
-                { icon: MailIcon, href: "#", label: "Email" }
-              ].map((social) => (
-                <a
-                  key={social.label}
-                  href={social.href}
-                  className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-vote-blue transition-colors duration-300 group"
-                  aria-label={social.label}
-                >
-                  <social.icon className="h-5 w-5 text-gray-400 group-hover:text-white transition-colors" />
-                </a>
-              ))}
+            <div className="flex space-x-4 mt-4">
+              <a href="#" aria-label="Twitter" className="text-white hover:text-vote-accent">
+                <TwitterIcon className="h-5 w-5" />
+              </a>
+              <a href="#" aria-label="Facebook" className="text-white hover:text-vote-accent">
+                <FacebookIcon className="h-5 w-5" />
+              </a>
+              <a href="#" aria-label="GitHub" className="text-white hover:text-vote-accent">
+                <GithubIcon className="h-5 w-5" />
+              </a>
             </div>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h3 className="font-semibold text-lg mb-6 text-white">Platform</h3>
-            <ul className="space-y-4">
-              {[
-                { name: "How It Works", path: "/how-it-works" },
-                { name: "Elections", path: "/elections" },
-                { name: "Security", path: "/security" },
-                { name: "Verify Votes", path: "/verify" }
-              ].map((link) => (
-                <li key={link.path}>
-                  <Link 
-                    to={link.path} 
-                    className="text-gray-300 hover:text-vote-accent transition-colors duration-300 hover:underline"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
+          {/* Quick links */}
+          <div className="col-span-1">
+            <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/" className="text-gray-300 hover:text-white transition-colors">
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link to="/how-it-works" className="text-gray-300 hover:text-white transition-colors">
+                  How It Works
+                </Link>
+              </li>
+              <li>
+                <Link to="/elections" className="text-gray-300 hover:text-white transition-colors">
+                  Elections
+                </Link>
+              </li>
+              <li>
+                <Link to="/verify" className="text-gray-300 hover:text-white transition-colors">
+                  Verify Votes
+                </Link>
+              </li>
+              <li>
+                <Link to="/about-us" className="text-gray-300 hover:text-white transition-colors">
+                  About Us
+                </Link>
+              </li>
             </ul>
           </div>
 
-          {/* Support */}
-          <div>
-            <h3 className="font-semibold text-lg mb-6 text-white">Support</h3>
-            <ul className="space-y-4">
-              {[
-                { name: "FAQ", path: "/faq" },
-                { name: "Contact", path: "/contact" },
-                { name: "Privacy Policy", path: "/privacy" },
-                { name: "Terms of Service", path: "/terms" }
-              ].map((link) => (
-                <li key={link.path}>
-                  <Link 
-                    to={link.path} 
-                    className="text-gray-300 hover:text-vote-accent transition-colors duration-300 hover:underline"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+          {/* Contact */}
+          <div className="col-span-1">
+            <h3 className="text-lg font-semibold mb-4">Contact</h3>
+            <p className="text-gray-300">
+              Have questions or need assistance? Contact our support team.
+            </p>
+            <Link 
+              to="/contact" 
+              className="inline-block mt-4 px-4 py-2 bg-vote-teal text-white rounded hover:bg-vote-accent transition-colors"
+            >
+              Contact Us
+            </Link>
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <div className="text-gray-400 text-sm mb-4 md:mb-0">
-            © 2024 BiometricBallot. All rights reserved. Securing democracy through technology.
-          </div>
-          
-          <div className="flex items-center space-x-6 text-sm">
-            <div className="flex items-center space-x-2 text-gray-400">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span>System Status: Operational</span>
-            </div>
-          </div>
+        <div className="border-t border-gray-700 mt-10 pt-6">
+          <p className="text-center text-gray-400 text-sm">
+            © {new Date().getFullYear()} BiometricBallot. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>
