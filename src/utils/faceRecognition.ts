@@ -14,11 +14,11 @@ export class FaceRecognitionService {
       // Initialize TensorFlow.js
       await tf.ready();
       
-      // Load the MediaPipe face detection model
+      // Load the MediaPipe face detection model with proper configuration
       const model = faceDetection.SupportedModels.MediaPipeFaceDetector;
       const detectorConfig = {
-        runtime: 'tfjs' as const,
-        modelType: 'short' as const,
+        runtime: 'mediapipe' as const,
+        solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/face_detection',
         maxFaces: 1,
       };
       
