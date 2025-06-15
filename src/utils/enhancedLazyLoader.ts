@@ -42,7 +42,7 @@ export const createEnhancedLazyComponent = <T extends ComponentType<any>>(
     importFn().catch(console.warn);
   }
 
-  return (props: Record<string, any>) => {
+  return (props: React.ComponentProps<T>) => {
     // Announce loading to screen readers
     announceToScreenReader(loadingMessage, 'polite');
 
@@ -53,15 +53,15 @@ export const createEnhancedLazyComponent = <T extends ComponentType<any>>(
     return createElement(ErrorBoundary, {
       fallback: errorFallback || createElement('div', {
         role: 'alert',
-        className: 'p-4 text-red-600 bg-red-50 rounded',
-        children: errorMessage
-      }),
-      onError: handleError
-    }, createElement(Suspense, {
-      fallback: fallback || createElement(LoadingState, {
-        title: loadingMessage
-      })
-    }, createElement(LazyComponent, props)));
+        className: 'p-4 text-red-600 bg-red-50 rounded'
+      }, errorMessage),
+      onError: handleError,
+      children: createElement(Suspense, {
+        fallback: fallback || createElement(LoadingState, {
+          title: loadingMessage
+        })
+      }, createElement(LazyComponent, props))
+    });
   };
 };
 
