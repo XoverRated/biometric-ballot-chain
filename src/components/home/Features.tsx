@@ -1,5 +1,5 @@
 
-import { ShieldCheckIcon, FingerprintIcon, ChainIcon, EyeIcon, LockIcon, GlobeIcon } from "lucide-react";
+import { ShieldCheckIcon, FingerprintIcon, LinkIcon, EyeIcon, LockIcon, GlobeIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const features = [
@@ -12,7 +12,7 @@ const features = [
     iconColor: "text-blue-600"
   },
   {
-    icon: ChainIcon,
+    icon: LinkIcon,
     title: "Blockchain Security", 
     description: "Every vote is cryptographically secured and stored on an immutable blockchain ledger.",
     color: "from-teal-500 to-teal-600",
