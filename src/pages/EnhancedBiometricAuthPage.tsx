@@ -1,9 +1,15 @@
-
 import { MainLayout } from "@/components/layout/MainLayout";
-import { EnhancedBiometricAuth } from "@/components/auth/EnhancedBiometricAuth";
+import { LazyEnhancedBiometricAuth } from "@/components/common/LazyComponent";
 import { Shield, Zap, Eye } from "lucide-react";
+import { useEffect } from "react";
+import { preloadTensorFlow } from "@/utils/lazyTensorFlow";
 
 const EnhancedBiometricAuthPage = () => {
+  useEffect(() => {
+    // Preload TensorFlow.js when the page loads
+    preloadTensorFlow();
+  }, []);
+
   return (
     <MainLayout>
       <div className="max-w-6xl mx-auto">
@@ -78,7 +84,7 @@ const EnhancedBiometricAuthPage = () => {
           </div>
           
           <div className="md:col-span-3 order-1 md:order-2 flex justify-center">
-            <EnhancedBiometricAuth />
+            <LazyEnhancedBiometricAuth />
           </div>
         </div>
       </div>

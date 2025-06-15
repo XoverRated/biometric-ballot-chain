@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,10 +42,10 @@ export const LogViewer = () => {
     setLogs([]);
   };
 
-  const getLevelColor = (level: LogLevel) => {
+  const getLevelColor = (level: LogLevel): "default" | "destructive" | "secondary" | "outline" => {
     switch (level) {
       case LogLevel.ERROR: return 'destructive';
-      case LogLevel.WARN: return 'warning';
+      case LogLevel.WARN: return 'outline';
       case LogLevel.INFO: return 'default';
       case LogLevel.DEBUG: return 'secondary';
       default: return 'default';
