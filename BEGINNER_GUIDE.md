@@ -1,4 +1,3 @@
-
 # Biometric Voting App - Complete Beginner's Guide
 
 ## 📚 Prerequisites - What You Need to Know First
@@ -673,4 +672,3 @@ try {
 5. **Ask specific questions**: Instead of "it doesn't work," ask "why does line 42 give this error?"
 
 Remember: Every expert was once a beginner. Don't be afraid to break things - that's how you learn! 🚀
-
