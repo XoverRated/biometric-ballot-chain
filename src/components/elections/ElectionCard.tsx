@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import { CalendarIcon, ClockIcon, ArrowRightIcon } from "lucide-react";
+import { CalendarIcon, ArrowRightIcon } from "lucide-react";
 
 interface ElectionCardProps {
   id: number;
@@ -11,7 +11,6 @@ interface ElectionCardProps {
   date: string;
   description: string;
   status: "Active" | "Upcoming" | "Completed";
-  timeRemaining?: string;
 }
 
 export const ElectionCard = ({
@@ -20,16 +19,15 @@ export const ElectionCard = ({
   date,
   description,
   status,
-  timeRemaining,
 }: ElectionCardProps) => {
   const getStatusColor = () => {
     switch (status) {
       case "Active":
         return "bg-green-100 text-green-800";
       case "Upcoming":
-        return "bg-blue-100 text-blue-800"; // Kept for potential future use, though not displayed now
+        return "bg-blue-100 text-blue-800";
       case "Completed":
-        return "bg-gray-100 text-gray-800"; // Kept for potential future use
+        return "bg-gray-100 text-gray-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -51,21 +49,11 @@ export const ElectionCard = ({
       </CardHeader>
       <CardContent className="pt-6 flex-grow flex flex-col">
         <p className="text-gray-600 mb-4 flex-grow">{description}</p>
-        {(status === "Active" || status === "Upcoming") && timeRemaining && (
-          <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-            <ClockIcon className="h-4 w-4" />
-            {status === "Active" ? (
-              <span>Closes in: {timeRemaining}</span>
-            ) : (
-              <span>Opens in: {timeRemaining}</span>
-            )}
-          </div>
-        )}
         <div className="mt-auto">
           <Link to={`/elections/${id}`}>
             <Button className="w-full bg-vote-blue hover:bg-vote-teal transition-colors">
               {status === "Active" ? (
-                "Vote / View Results" // Updated text for Active status
+                "Vote / View Results"
               ) : status === "Upcoming" ? (
                 "View Details"
               ) : (
