@@ -1,5 +1,5 @@
 
-import { lazy, ComponentType, Suspense } from 'react';
+import { lazy, ComponentType, Suspense, createElement } from 'react';
 import { LoadingState } from '@/components/common/LoadingState';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { announceToScreenReader } from './accessibility';
@@ -50,26 +50,18 @@ export const createEnhancedLazyComponent = <T extends ComponentType<any>>(
       announceToScreenReader(errorMessage, 'assertive');
     };
 
-    return (
-      <ErrorBoundary 
-        fallback={errorFallback || (
-          <div role="alert" className="p-4 text-red-600 bg-red-50 rounded">
-            {errorMessage}
-          </div>
-        )}
-        onError={handleError}
-      >
-        <Suspense 
-          fallback={fallback || (
-            <LoadingState 
-              title={loadingMessage}
-            />
-          )}
-        >
-          <LazyComponent {...props} />
-        </Suspense>
-      </ErrorBoundary>
-    );
+    return createElement(ErrorBoundary, {
+      fallback: errorFallback || createElement('div', {
+        role: 'alert',
+        className: 'p-4 text-red-600 bg-red-50 rounded',
+        children: errorMessage
+      }),
+      onError: handleError
+    }, createElement(Suspense, {
+      fallback: fallback || createElement(LoadingState, {
+        title: loadingMessage
+      })
+    }, createElement(LazyComponent, props)));
   };
 };
 
