@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { advancedFaceRecognitionService } from "@/utils/advancedFaceRecognition";
 import { SecurityCheck } from "@/types/biometric";
