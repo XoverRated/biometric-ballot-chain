@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Camera, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { faceRecognition } from "@/utils/faceRecognition";
+import { faceRecognitionService } from "@/utils/faceRecognition";
 
 interface FaceAuthProps {
   onSuccess?: () => void | Promise<void>;
