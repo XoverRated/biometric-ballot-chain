@@ -5,6 +5,8 @@ import Index from "@/pages/Index";
 import AuthPage from "@/pages/AuthPage";
 import FaceAuthPage from "@/pages/FaceAuthPage";
 import FaceRegisterPage from "@/pages/FaceRegisterPage";
+import EnhancedBiometricAuthPage from "@/pages/EnhancedBiometricAuthPage";
+import EnhancedBiometricRegisterPage from "@/pages/EnhancedBiometricRegisterPage";
 import ElectionsPage from "@/pages/ElectionsPage";
 import ElectionDetailPage from "@/pages/ElectionDetailPage";
 import VoteConfirmationPage from "@/pages/VoteConfirmationPage";
@@ -37,6 +39,11 @@ const App = () => {
             
             <Route path="/face-auth" element={<ProtectedRoute><FaceAuthPage /></ProtectedRoute>} />
             <Route path="/face-register" element={<ProtectedRoute><FaceRegisterPage /></ProtectedRoute>} />
+            
+            {/* Enhanced Biometric Routes */}
+            <Route path="/enhanced-biometric-auth" element={<ProtectedRoute><EnhancedBiometricAuthPage /></ProtectedRoute>} />
+            <Route path="/enhanced-biometric-register" element={<ProtectedRoute><EnhancedBiometricRegisterPage /></ProtectedRoute>} />
+            
             <Route path="/elections" element={<BiometricProtectedRoute><ElectionsPage /></BiometricProtectedRoute>} />
             <Route path="/elections/:id" element={<BiometricProtectedRoute><ElectionDetailPage /></BiometricProtectedRoute>} />
             <Route path="/vote-confirmation" element={<BiometricProtectedRoute><VoteConfirmationPage /></BiometricProtectedRoute>} />
