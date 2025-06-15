@@ -201,7 +201,7 @@ export class AdvancedFaceRecognitionService {
     const checks = {
       textureAnalysis: await this.analyzeTextureConsistency(frames),
       depthEstimation: this.estimateDepthVariation(frames),
-      reflectionDetection: this.detectUnnatural Reflections(frames),
+      reflectionDetection: this.detectUnnaturalReflections(frames),
       frequencyAnalysis: this.analyzeFrequencyPatterns(frames)
     };
 
