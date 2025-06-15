@@ -37,13 +37,13 @@ const App = () => {
           <Route path="/elections" element={<ProtectedRoute><ElectionsPage /></ProtectedRoute>} />
           <Route path="/elections/:id" element={<ProtectedRoute><ElectionDetailPage /></ProtectedRoute>} />
           <Route path="/vote-confirmation" element={<ProtectedRoute><VoteConfirmationPage /></ProtectedRoute>} />
+          <Route path="/verify" element={<ProtectedRoute><VerifyPage /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 
           {/* Admin Route */}
           <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
 
-          <Route path="/verify" element={<VerifyPage />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
