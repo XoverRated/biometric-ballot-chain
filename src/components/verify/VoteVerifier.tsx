@@ -41,6 +41,7 @@ export const VoteVerifier = () => {
           cast_at,
           blockchain_hash,
           block_number,
+          blockchain_timestamp,
           candidates (
             name,
             position
@@ -66,7 +67,7 @@ export const VoteVerifier = () => {
         return;
       }
 
-      if (data) {
+      if (data && data.candidates && data.elections) {
         // Now verify on blockchain
         let blockchainVerified = false;
         try {

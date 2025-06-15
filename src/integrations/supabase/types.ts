@@ -133,7 +133,9 @@ export type Database = {
       }
       votes: {
         Row: {
+          block_number: number | null
           blockchain_hash: string
+          blockchain_timestamp: string | null
           candidate_id: string
           cast_at: string | null
           election_id: string
@@ -142,7 +144,9 @@ export type Database = {
           voter_id: string
         }
         Insert: {
+          block_number?: number | null
           blockchain_hash: string
+          blockchain_timestamp?: string | null
           candidate_id: string
           cast_at?: string | null
           election_id: string
@@ -151,7 +155,9 @@ export type Database = {
           voter_id: string
         }
         Update: {
+          block_number?: number | null
           blockchain_hash?: string
+          blockchain_timestamp?: string | null
           candidate_id?: string
           cast_at?: string | null
           election_id?: string
