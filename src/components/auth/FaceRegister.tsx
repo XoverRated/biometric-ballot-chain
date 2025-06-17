@@ -1,220 +1,186 @@
 
-import { Button } from "@/components/ui/button";
-import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { Camera, Loader2, CheckCircle, AlertCircle, RotateCcw } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { faceRecognitionService } from "@/utils/faceRecognition";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Camera, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { faceRecognitionService } from '@/utils/faceRecognition';
+import { useCamera } from '@/hooks/useCamera';
+import { Button } from '@/components/ui/button';
 
 export const FaceRegister = () => {
-  const [isInitializing, setIsInitializing] = useState(true);
-  const [isCapturing, setIsCapturing] = useState(false);
-  const [captureProgress, setCaptureProgress] = useState(0);
+  const [isRegistering, setIsRegistering] = useState(false);
   const [faceDetected, setFaceDetected] = useState(false);
   const [registrationComplete, setRegistrationComplete] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [captureProgress, setCaptureProgress] = useState(0);
+
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  
+  const {
+    stream,
+    isLoading: cameraLoading,
+    error: cameraError,
+    hasPermission,
+    videoRef,
+    requestCameraAccess,
+    stopCamera
+  } = useCamera();
 
   useEffect(() => {
     if (!user) {
-      toast({ title: "User not found", description: "Please sign up again.", variant: "destructive" });
+      toast({ 
+        title: "Authentication Required", 
+        description: "Please sign in to register biometric data.", 
+        variant: "destructive" 
+      });
       navigate("/auth");
       return;
     }
-    
-    initializeFaceRecognition();
-    
+
+    // Initialize face recognition and request camera access
+    const initializeRegistration = async () => {
+      try {
+        await faceRecognitionService.initialize();
+        await requestCameraAccess();
+      } catch (error) {
+        console.error('Initialization failed:', error);
+      }
+    };
+
+    initializeRegistration();
+
     return () => {
-      cleanup();
+      stopCamera();
+      faceRecognitionService.cleanup();
     };
-  }, [user]);
+  }, [user, requestCameraAccess, stopCamera, navigate, toast]);
 
-  const initializeFaceRecognition = async () => {
-    try {
-      setIsInitializing(true);
-      setError(null);
-      
-      // Initialize face recognition service
-      await faceRecognitionService.initialize();
-      
-      // Get camera access
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: 640,
-          height: 480,
-          facingMode: 'user'
-        }
-      });
-      
-      setStream(mediaStream);
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        videoRef.current.play();
-      }
-      
-      setIsInitializing(false);
-      startFaceDetection();
-      
-    } catch (err) {
-      console.error('Face recognition initialization error:', err);
-      setError('Failed to initialize camera or face recognition. Please ensure camera permissions are granted.');
-      setIsInitializing(false);
-    }
-  };
+  // Start face detection when camera is ready
+  useEffect(() => {
+    if (!stream || !videoRef.current) return;
 
-  const startFaceDetection = () => {
-    const detectFaces = async () => {
-      if (videoRef.current && !isCapturing) {
-        try {
-          const detected = await faceRecognitionService.detectFace(videoRef.current);
-          setFaceDetected(detected);
-        } catch (err) {
-          console.error('Face detection error:', err);
+    let detectionInterval: NodeJS.Timeout;
+
+    const startDetection = () => {
+      detectionInterval = setInterval(async () => {
+        if (videoRef.current && !isRegistering) {
+          try {
+            const detected = await faceRecognitionService.detectFace(videoRef.current);
+            setFaceDetected(detected);
+          } catch (error) {
+            console.error('Face detection error:', error);
+          }
         }
-      }
+      }, 500); // Check every 500ms
     };
 
-    // Run face detection every 100ms
-    const interval = setInterval(detectFaces, 100);
-    
-    // Cleanup interval when component unmounts
-    return () => clearInterval(interval);
-  };
+    // Wait a bit for video to stabilize
+    setTimeout(startDetection, 1000);
 
-  const handleRegisterFace = async () => {
+    return () => {
+      if (detectionInterval) {
+        clearInterval(detectionInterval);
+      }
+    };
+  }, [stream, isRegistering]);
+
+  const handleRegister = async () => {
     if (!user || !videoRef.current) {
-      setError("Cannot register face - user or camera not available");
+      setError("Cannot register - user or camera not available");
       return;
     }
 
-    setIsCapturing(true);
+    setIsRegistering(true);
     setCaptureProgress(0);
-    setError(null);
 
     try {
-      // Capture multiple face samples for better accuracy
-      const faceEmbeddings: number[][] = [];
-      
-      for (let i = 0; i < 5; i++) {
-        setCaptureProgress((i + 1) * 20);
+      const samples: number[][] = [];
+      const sampleCount = 3;
+
+      // Capture multiple samples
+      for (let i = 0; i < sampleCount; i++) {
+        setCaptureProgress(((i + 1) / sampleCount) * 80);
         
-        // Wait a bit between captures
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Wait between captures
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         const embedding = await faceRecognitionService.extractFaceEmbedding(videoRef.current);
         
         if (embedding) {
-          faceEmbeddings.push(embedding);
+          samples.push(embedding);
         } else {
-          throw new Error('Failed to extract face features. Please ensure your face is clearly visible.');
+          throw new Error(`Failed to capture sample ${i + 1}`);
         }
       }
 
-      if (faceEmbeddings.length < 3) {
-        throw new Error('Could not capture enough face samples. Please try again.');
+      if (samples.length < 2) {
+        throw new Error('Could not capture enough biometric samples. Please try again.');
       }
 
+      setCaptureProgress(90);
+
       // Average the embeddings for better accuracy
-      const avgEmbedding = averageEmbeddings(faceEmbeddings);
-      
-      // Save face embedding to user metadata
+      const avgEmbedding = samples[0].map((_, index) => 
+        samples.reduce((sum, sample) => sum + sample[index], 0) / samples.length
+      );
+
+      // Save to Supabase
       const { error: updateError } = await supabase.auth.updateUser({
         data: { 
           face_embedding: avgEmbedding,
-          biometric_type: 'face_recognition'
+          biometric_type: 'face_recognition',
+          registration_date: new Date().toISOString()
         }
       });
 
       if (updateError) {
-        throw new Error(`Failed to save face data: ${updateError.message}`);
+        throw new Error(`Failed to save biometric data: ${updateError.message}`);
       }
 
-      setRegistrationComplete(true);
       setCaptureProgress(100);
+      setRegistrationComplete(true);
       
       toast({
-        title: "Face Registration Successful",
-        description: "Your face has been registered for secure authentication.",
+        title: "Registration Successful",
+        description: "Your biometric data has been registered successfully.",
       });
       
       setTimeout(() => {
-        cleanup();
+        stopCamera();
         navigate("/face-auth");
       }, 2000);
 
-    } catch (err) {
-      console.error('Face registration error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Face registration failed';
-      setError(errorMessage);
-      setIsCapturing(false);
-      setCaptureProgress(0);
+    } catch (error) {
+      console.error('Registration error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
       
       toast({
-        title: "Face Registration Failed",
+        title: "Registration Failed",
         description: errorMessage,
         variant: "destructive",
       });
+    } finally {
+      setIsRegistering(false);
+      setCaptureProgress(0);
     }
-  };
-
-  const averageEmbeddings = (embeddings: number[][]): number[] => {
-    if (embeddings.length === 0) return [];
-    
-    const avgEmbedding = new Array(embeddings[0].length).fill(0);
-    
-    embeddings.forEach(embedding => {
-      embedding.forEach((value, index) => {
-        avgEmbedding[index] += value;
-      });
-    });
-    
-    return avgEmbedding.map(sum => sum / embeddings.length);
-  };
-
-  const cleanup = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-    }
-    faceRecognitionService.cleanup();
   };
 
   const handleSkip = () => {
-    cleanup();
-    toast({
-      title: "Face Registration Skipped",
-      description: "You can register your face later from settings.",
-    });
+    stopCamera();
     navigate("/elections");
   };
 
-  const handleRetry = () => {
-    setError(null);
-    setIsCapturing(false);
-    setCaptureProgress(0);
-    setRegistrationComplete(false);
-    initializeFaceRecognition();
-  };
-
-  if (isInitializing) {
+  if (cameraLoading) {
     return (
       <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
         <div className="text-center">
-          <div className="inline-flex p-3 rounded-full bg-vote-light mb-4">
-            <Camera className="h-10 w-10 text-vote-teal" />
-          </div>
-          <h2 className="text-2xl font-bold text-vote-blue mb-4">Initializing Face Recognition</h2>
+          <Camera className="h-12 w-12 text-vote-teal mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-vote-blue mb-4">Initializing Camera...</h2>
           <Loader2 className="h-8 w-8 animate-spin text-vote-blue mx-auto" />
-          <p className="text-gray-600 mt-2">Loading camera and AI models...</p>
+          <p className="text-sm text-gray-600 mt-2">Please allow camera access when prompted</p>
         </div>
       </div>
     );
@@ -223,14 +189,20 @@ export const FaceRegister = () => {
   return (
     <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
       <div className="text-center mb-6">
-        <div className="inline-flex p-3 rounded-full bg-vote-light mb-4">
-          <Camera className="h-10 w-10 text-vote-teal" />
-        </div>
-        <h2 className="text-2xl font-bold text-vote-blue">Register Your Face</h2>
-        <p className="text-gray-600 mt-2">
-          Position your face in the camera for secure biometric registration
-        </p>
+        <Camera className="h-12 w-12 text-vote-teal mx-auto mb-4" />
+        <h2 className="text-2xl font-bold text-vote-blue">Face Registration</h2>
+        <p className="text-gray-600 mt-2">Register your face for secure authentication</p>
       </div>
+
+      {cameraError && (
+        <div className="mb-4 p-3 bg-red-100 border border-red-200 rounded-lg flex items-center">
+          <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+          <div>
+            <p className="text-red-700 text-sm font-medium">Camera Error</p>
+            <p className="text-red-600 text-xs">{cameraError}</p>
+          </div>
+        </div>
+      )}
 
       <div className="relative mb-6">
         <video
@@ -238,33 +210,41 @@ export const FaceRegister = () => {
           className="w-full h-64 bg-gray-100 rounded-lg object-cover"
           playsInline
           muted
+          autoPlay
         />
-        <canvas ref={canvasRef} className="hidden" />
         
-        {/* Face detection indicator */}
-        {faceDetected && !isCapturing && (
-          <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs">
-            Face Detected
-          </div>
-        )}
-        
-        {!faceDetected && !isCapturing && (
-          <div className="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs">
-            Position Face
-          </div>
-        )}
-
-        {/* Progress overlay */}
-        {isCapturing && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
-            <div className="text-center text-white">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-              <p>Capturing... {captureProgress}%</p>
+        {!stream && !cameraError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+            <div className="text-center">
+              <Camera className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-600">Camera not available</p>
+              <Button 
+                onClick={requestCameraAccess}
+                variant="outline"
+                size="sm"
+                className="mt-2"
+              >
+                Retry Camera Access
+              </Button>
             </div>
           </div>
         )}
 
-        {/* Success overlay */}
+        {faceDetected && stream && !isRegistering && (
+          <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs">
+            Face Detected
+          </div>
+        )}
+
+        {isRegistering && (
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+            <div className="text-center text-white">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+              <p>Capturing... {Math.round(captureProgress)}%</p>
+            </div>
+          </div>
+        )}
+
         {registrationComplete && (
           <div className="absolute inset-0 bg-green-500 bg-opacity-90 flex items-center justify-center rounded-lg">
             <div className="text-center text-white">
@@ -275,51 +255,30 @@ export const FaceRegister = () => {
         )}
       </div>
 
-      {/* Error message */}
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-200 rounded-lg flex items-center">
-          <AlertCircle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0" />
-          <p className="text-red-700 text-sm">{error}</p>
-        </div>
-      )}
-
-      {/* Controls */}
       <div className="space-y-3">
-        {!registrationComplete && !error && (
-          <Button
-            onClick={handleRegisterFace}
-            disabled={!faceDetected || isCapturing}
-            className="w-full bg-vote-blue hover:bg-vote-teal text-white py-3"
-          >
-            {isCapturing ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                Capturing...
-              </>
-            ) : (
-              <>
-                <Camera className="h-5 w-5 mr-2" />
-                Register Face
-              </>
-            )}
-          </Button>
-        )}
-
-        {error && (
-          <Button
-            onClick={handleRetry}
-            className="w-full bg-vote-blue hover:bg-vote-teal text-white py-3"
-          >
-            <RotateCcw className="h-5 w-5 mr-2" />
-            Retry
-          </Button>
-        )}
+        <Button
+          onClick={handleRegister}
+          disabled={!faceDetected || isRegistering || !stream || registrationComplete}
+          className="w-full bg-vote-blue hover:bg-vote-teal text-white"
+        >
+          {isRegistering ? (
+            <>
+              <Loader2 className="h-5 w-5 animate-spin mr-2" />
+              Registering...
+            </>
+          ) : (
+            <>
+              <Camera className="h-5 w-5 mr-2" />
+              Register Face
+            </>
+          )}
+        </Button>
 
         <Button
           onClick={handleSkip}
           variant="outline"
           className="w-full"
-          disabled={isCapturing}
+          disabled={isRegistering}
         >
           Skip for Now
         </Button>
