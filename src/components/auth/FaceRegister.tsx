@@ -89,7 +89,11 @@ export const FaceRegister = () => {
 
   const handleRegister = async () => {
     if (!user || !videoRef.current) {
-      setError("Cannot register - user or camera not available");
+      toast({
+        title: "Registration Error",
+        description: "Cannot register - user or camera not available",
+        variant: "destructive",
+      });
       return;
     }
 
