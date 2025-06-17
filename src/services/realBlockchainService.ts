@@ -1,4 +1,3 @@
-
 import { ethers } from 'ethers';
 
 // Real smart contract ABI
@@ -26,17 +25,31 @@ export class RealBlockchainService {
   private provider: ethers.BrowserProvider | null = null;
   private signer: ethers.Signer | null = null;
   private contract: ethers.Contract | null = null;
-  private contractAddress: string;
+  private contractAddress: string | null = null;
 
   constructor(contractAddress?: string) {
-    // Use environment-specific contract address
-    this.contractAddress = contractAddress || this.getContractAddress();
+    // Don't resolve contract address during construction to avoid errors
+    this.contractAddress = contractAddress || null;
   }
 
   private getContractAddress(): string {
-    // In production, this would come from environment configuration
-    const chainId = window.ethereum?.chainId;
+    // If contract address was provided in constructor, use it
+    if (this.contractAddress) {
+      return this.contractAddress;
+    }
+
+    // Check if ethereum is available
+    if (typeof window === 'undefined' || !window.ethereum) {
+      throw new Error('Web3 wallet not available. Please install MetaMask or connect your wallet first.');
+    }
+
+    const chainId = window.ethereum.chainId;
     
+    // Handle undefined chainId
+    if (!chainId) {
+      throw new Error('No network detected. Please connect your wallet and select a network.');
+    }
+
     switch (chainId) {
       case '0x1': // Ethereum Mainnet
         return process.env.MAINNET_CONTRACT_ADDRESS || '';
@@ -45,7 +58,7 @@ export class RealBlockchainService {
       case '0x539': // Local development
         return '0x5FbDB2315678afecb367f032d93F642f64180aa3'; // Local hardhat address
       default:
-        throw new Error(`Unsupported network: ${chainId}`);
+        throw new Error(`Unsupported network: ${chainId}. Please switch to a supported network.`);
     }
   }
 
@@ -53,19 +66,22 @@ export class RealBlockchainService {
     this.provider = provider;
     this.signer = signer;
     
-    if (!this.contractAddress) {
+    // Get contract address only when initializing with a provider
+    const contractAddress = this.getContractAddress();
+    
+    if (!contractAddress) {
       throw new Error('Contract address not configured for this network');
     }
     
-    this.contract = new ethers.Contract(this.contractAddress, VOTING_CONTRACT_ABI, signer);
+    this.contract = new ethers.Contract(contractAddress, VOTING_CONTRACT_ABI, signer);
     
     // Verify contract is deployed
-    const code = await provider.getCode(this.contractAddress);
+    const code = await provider.getCode(contractAddress);
     if (code === '0x') {
       throw new Error('Contract not deployed at specified address');
     }
     
-    console.log('Real blockchain service initialized with contract:', this.contractAddress);
+    console.log('Real blockchain service initialized with contract:', contractAddress);
   }
 
   private generateVoterHash(voterId: string, electionId: string): string {
@@ -235,5 +251,5 @@ export class RealBlockchainService {
   }
 }
 
-// Create singleton instance
+// Create singleton instance without triggering contract address resolution
 export const realBlockchainService = new RealBlockchainService();
