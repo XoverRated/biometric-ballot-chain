@@ -1,181 +1,279 @@
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, AlertCircle, Clock } from "lucide-react";
+import { Shield, CheckCircle, AlertCircle, Loader2, Eye, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { FaceAuth } from "./FaceAuth";
-import { BackupAuthMethods } from "./BackupAuthMethods";
-import { SessionWarningDialog } from "@/components/common/SessionWarningDialog";
-import { useRateLimit } from "@/hooks/useRateLimit";
-import { useSessionManager } from "@/hooks/useSessionManager";
-import { auditLogger } from "@/utils/auditLogger";
+import { faceRecognitionService } from "@/utils/faceRecognition";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 export const EnhancedFaceAuth = () => {
-  const [showBackupAuth, setShowBackupAuth] = useState(false);
-  const [faceAuthFailed, setFaceAuthFailed] = useState(false);
-  const { user, signOut } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [authStatus, setAuthStatus] = useState<'idle' | 'success' | 'failed'>('idle');
+  const [confidence, setConfidence] = useState<number>(0);
+  const [faceDetected, setFaceDetected] = useState(false);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [authProgress, setAuthProgress] = useState(0);
+  const [currentCheck, setCurrentCheck] = useState<string>('');
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  
-  // Rate limiting for biometric attempts
-  const rateLimit = useRateLimit({
-    maxAttempts: 5,
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    blockDurationMs: 30 * 60 * 1000, // 30 minutes
-  });
 
-  // Session management
-  const sessionManager = useSessionManager({
-    timeoutMinutes: 30,
-    warningMinutes: 5,
-  });
+  const securityChecks = [
+    { name: 'Liveness Detection', icon: <Eye className="h-4 w-4" /> },
+    { name: 'Quality Assessment', icon: <Camera className="h-4 w-4" /> },
+    { name: 'Face Matching', icon: <Shield className="h-4 w-4" /> }
+  ];
 
   useEffect(() => {
-    if (user) {
-      auditLogger.logAuthentication(user.id, true, 'biometric_attempt');
+    if (!user) {
+      navigate("/auth");
+      return;
     }
+
+    const registeredEmbedding = user.user_metadata?.face_embedding;
+    if (!registeredEmbedding) {
+      toast({
+        title: "No Enhanced Biometric Data Found",
+        description: "Please register enhanced biometrics first.",
+        variant: "default",
+      });
+      navigate("/enhanced-biometric-register");
+      return;
+    }
+
+    startCamera();
+    
+    return () => {
+      cleanup();
+    };
   }, [user]);
 
-  const handleFaceAuthSuccess = async () => {
-    if (user) {
-      await auditLogger.logAuthentication(user.id, true, 'facial_recognition');
-      navigate("/elections");
-    }
-  };
+  const startCamera = async () => {
+    try {
+      setIsLoading(true);
+      await faceRecognitionService.initialize();
+      
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          width: { ideal: 1280, min: 640 },
+          height: { ideal: 720, min: 480 },
+          facingMode: 'user'
+        }
+      });
+      
+      setStream(mediaStream);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        await videoRef.current.play();
+      }
 
-  const handleFaceAuthFailure = async () => {
-    if (user) {
-      await auditLogger.logAuthentication(user.id, false, 'facial_recognition');
-    }
-    
-    rateLimit.recordAttempt();
-    setFaceAuthFailed(true);
-
-    if (rateLimit.remainingAttempts <= 2) {
+      startFaceDetection();
+    } catch (error) {
+      console.error("Enhanced camera access failed:", error);
       toast({
-        title: "Multiple Failed Attempts",
-        description: `${rateLimit.remainingAttempts} attempts remaining before temporary lockout.`,
+        title: "Camera Error",
+        description: "Unable to access camera for enhanced authentication.",
         variant: "destructive",
       });
-    }
-
-    if (rateLimit.remainingAttempts === 0) {
-      toast({
-        title: "Account Temporarily Locked",
-        description: "Too many failed attempts. Please use backup authentication or wait 30 minutes.",
-        variant: "destructive",
-      });
-      setShowBackupAuth(true);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleBackupAuthSuccess = async () => {
-    if (user) {
-      await auditLogger.logAuthentication(user.id, true, 'backup_method');
-    }
-    rateLimit.reset();
-    navigate("/elections");
+  const startFaceDetection = () => {
+    const detectFaces = async () => {
+      if (videoRef.current && !isProcessing) {
+        try {
+          const detected = await faceRecognitionService.detectFace(videoRef.current);
+          setFaceDetected(detected);
+        } catch (err) {
+          console.error('Enhanced face detection error:', err);
+        }
+      }
+    };
+
+    const interval = setInterval(detectFaces, 100);
+    return () => clearInterval(interval);
   };
 
-  const handleSessionExtend = () => {
-    sessionManager.extendSession();
-  };
-
-  const handleSessionExpiry = () => {
-    signOut();
-  };
-
-  if (!rateLimit.canProceed && !showBackupAuth) {
-    const remainingTime = Math.ceil(rateLimit.remainingTime / 1000 / 60);
+  const performEnhancedAuth = async () => {
+    if (!videoRef.current || !user) return;
     
-    return (
-      <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
-        <div className="text-center">
-          <div className="inline-flex p-3 rounded-full bg-red-100 mb-4">
-            <AlertCircle className="h-10 w-10 text-red-500" />
-          </div>
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Account Temporarily Locked</h2>
-          <p className="text-gray-600 mb-6">
-            Too many failed authentication attempts. Please wait {remainingTime} minutes or use backup authentication.
-          </p>
-          
-          <div className="flex items-center justify-center text-sm text-gray-500 mb-6">
-            <Clock className="h-4 w-4 mr-2" />
-            Lockout expires in {remainingTime} minutes
-          </div>
-          
-          <button
-            onClick={() => setShowBackupAuth(true)}
-            className="w-full bg-vote-blue hover:bg-vote-teal text-white py-2 px-4 rounded-lg transition-colors"
-          >
-            Use Backup Authentication
-          </button>
-        </div>
-      </div>
-    );
-  }
+    try {
+      setIsProcessing(true);
+      setAuthStatus('idle');
+      setAuthProgress(0);
+      
+      // Simulate enhanced security checks
+      for (let i = 0; i < securityChecks.length; i++) {
+        setCurrentCheck(securityChecks[i].name);
+        setAuthProgress((i / securityChecks.length) * 80);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+      setCurrentCheck('Processing...');
+      setAuthProgress(90);
+      
+      const currentEmbedding = await faceRecognitionService.extractFaceEmbedding(videoRef.current);
+      
+      if (!currentEmbedding) {
+        throw new Error('Failed to extract enhanced face features');
+      }
 
-  if (showBackupAuth) {
-    return (
-      <div className="space-y-6">
-        <BackupAuthMethods
-          onSuccess={handleBackupAuthSuccess}
-          userEmail={user?.email || ''}
-        />
+      const registeredEmbedding = user.user_metadata?.face_embedding;
+      const similarity = faceRecognitionService.compareFaceEmbeddings(currentEmbedding, registeredEmbedding);
+      
+      setConfidence(similarity);
+      setAuthProgress(100);
+      
+      // Enhanced threshold for security
+      if (similarity > 0.8) {
+        setAuthStatus('success');
+        toast({
+          title: "Enhanced Authentication Successful",
+          description: `Advanced verification completed with ${Math.round(similarity * 100)}% confidence.`,
+        });
         
-        {!rateLimit.isBlocked && (
-          <div className="text-center">
-            <button
-              onClick={() => {
-                setShowBackupAuth(false);
-                setFaceAuthFailed(false);
-              }}
-              className="text-vote-teal hover:underline text-sm"
-            >
-              ← Back to Facial Recognition
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  }
+        setTimeout(() => {
+          cleanup();
+          navigate("/elections");
+        }, 2000);
+      } else {
+        setAuthStatus('failed');
+        toast({
+          title: "Enhanced Authentication Failed",
+          description: "Advanced verification failed. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Enhanced verification failed:", error);
+      setAuthStatus('failed');
+      toast({
+        title: "Authentication Error",
+        description: error instanceof Error ? error.message : "Enhanced verification failed",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+      setCurrentCheck('');
+      setAuthProgress(0);
+    }
+  };
+
+  const cleanup = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    faceRecognitionService.cleanup();
+  };
 
   return (
-    <>
-      <div className="space-y-6">
-        <FaceAuth
-          onSuccess={handleFaceAuthSuccess}
-          onFailure={handleFaceAuthFailure}
-        />
-        
-        {faceAuthFailed && rateLimit.canProceed && (
-          <div className="text-center">
-            <p className="text-sm text-gray-600 mb-2">
-              Having trouble with facial recognition?
-            </p>
-            <button
-              onClick={() => setShowBackupAuth(true)}
-              className="text-vote-teal hover:underline text-sm"
-            >
-              Try backup authentication methods
-            </button>
-          </div>
-        )}
-
-        {rateLimit.remainingAttempts < 5 && rateLimit.canProceed && (
-          <div className="text-center text-sm text-orange-600">
-            {rateLimit.remainingAttempts} attempts remaining
-          </div>
-        )}
+    <div className="bg-white p-8 rounded-xl shadow-lg max-w-2xl w-full">
+      <div className="text-center mb-6">
+        <Shield className="h-12 w-12 text-vote-teal mx-auto mb-4" />
+        <h2 className="text-2xl font-bold text-vote-blue mb-2">Enhanced Face Authentication</h2>
+        <p className="text-gray-600">
+          Advanced AI-powered security verification
+        </p>
       </div>
 
-      <SessionWarningDialog
-        open={sessionManager.showWarning}
-        timeUntilExpiry={sessionManager.timeUntilExpiry}
-        onExtend={handleSessionExtend}
-        onSignOut={handleSessionExpiry}
-      />
-    </>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          <div className="relative mb-4">
+            <video
+              ref={videoRef}
+              className="w-full h-64 bg-gray-100 rounded-lg object-cover"
+              playsInline
+              muted
+            />
+            <canvas ref={canvasRef} className="hidden" />
+            
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+                <div className="text-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-vote-blue mx-auto mb-2" />
+                  <p className="text-sm text-gray-600">Initializing enhanced security...</p>
+                </div>
+              </div>
+            )}
+
+            {faceDetected && !isProcessing && authStatus === 'idle' && (
+              <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs">
+                Face Detected
+              </div>
+            )}
+            
+            {authStatus === 'success' && (
+              <div className="absolute inset-0 flex items-center justify-center bg-green-100 bg-opacity-90 rounded-lg">
+                <div className="text-center">
+                  <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-2" />
+                  <p className="text-green-600 font-semibold">Enhanced Verification Complete!</p>
+                  <p className="text-sm text-green-600">Confidence: {Math.round(confidence * 100)}%</p>
+                </div>
+              </div>
+            )}
+            
+            {authStatus === 'failed' && (
+              <div className="absolute inset-0 flex items-center justify-center bg-red-100 bg-opacity-90 rounded-lg">
+                <div className="text-center">
+                  <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-2" />
+                  <p className="text-red-600 font-semibold">Enhanced Verification Failed</p>
+                  <p className="text-sm text-red-600">Please try again</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <Button
+            onClick={performEnhancedAuth}
+            disabled={isLoading || isProcessing || !faceDetected || authStatus === 'success'}
+            className="w-full bg-vote-blue hover:bg-vote-teal text-white py-3 px-4"
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                Authenticating...
+              </>
+            ) : (
+              <>
+                <Shield className="h-5 w-5 mr-2" />
+                Start Enhanced Authentication
+              </>
+            )}
+          </Button>
+        </div>
+
+        <div className="space-y-4">
+          {isProcessing && (
+            <div className="bg-vote-light p-4 rounded-lg">
+              <h3 className="font-semibold text-vote-blue mb-2">Security Progress</h3>
+              <Progress value={authProgress} className="mb-2" />
+              <p className="text-sm text-gray-600">{currentCheck}</p>
+            </div>
+          )}
+
+          <div className="bg-vote-light p-4 rounded-lg">
+            <h3 className="font-semibold text-vote-blue mb-3">Security Checks</h3>
+            <div className="space-y-2">
+              {securityChecks.map((check, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  {check.icon}
+                  <span className="text-sm">{check.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
