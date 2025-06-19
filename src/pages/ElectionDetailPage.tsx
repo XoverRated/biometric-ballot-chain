@@ -1,6 +1,7 @@
 
 import { MainLayout } from "@/components/layout/MainLayout";
 import { BallotCard } from "@/components/elections/BallotCard";
+import { PollStation } from "@/components/elections/PollStation";
 import { Link, useParams } from "react-router-dom";
 import { CalendarIcon, ChevronLeftIcon, AlertTriangleIcon, InfoIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -159,6 +160,13 @@ const ElectionDetailPage = () => {
             </Alert>
           )}
         </div>
+
+        {/* Live Results Section */}
+        {(election.status === "Active" || election.status === "Completed") && (
+          <div className="mb-8">
+            <PollStation electionId={election.dbElectionId} />
+          </div>
+        )}
         
         {election.status === "Active" && election.positions.map((position, index) => (
           <BallotCard 
