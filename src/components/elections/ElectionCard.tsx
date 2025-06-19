@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, ClockIcon } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface ElectionCardProps {
@@ -50,25 +50,14 @@ export const ElectionCard = ({ id, title, date, description, status }: ElectionC
           {description}
         </p>
         
-        <div className="flex gap-3">
-          <Link to={`/election/${id}`} className="flex-1">
-            <Button 
-              className="w-full bg-vote-blue hover:bg-vote-teal transition-colors"
-              disabled={status === "Completed"}
-            >
-              {status === "Active" ? "Vote Now" : status === "Upcoming" ? "View Details" : "View Results"}
-            </Button>
-          </Link>
-          
-          {status === "Active" && (
-            <Link to={`/elections/${id}/results`}>
-              <Button variant="outline" className="border-vote-blue text-vote-blue hover:bg-vote-light">
-                <ClockIcon className="h-4 w-4 mr-2" />
-                Live Results
-              </Button>
-            </Link>
-          )}
-        </div>
+        <Link to={`/election/${id}`} className="flex-1">
+          <Button 
+            className="w-full bg-vote-blue hover:bg-vote-teal transition-colors"
+            disabled={status === "Completed"}
+          >
+            {status === "Active" ? "Vote Now" : status === "Upcoming" ? "View Details" : "View Results"}
+          </Button>
+        </Link>
       </CardContent>
     </Card>
   );
