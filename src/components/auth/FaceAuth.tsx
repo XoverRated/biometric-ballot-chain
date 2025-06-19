@@ -1,12 +1,13 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Camera, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Camera, CheckCircle, AlertCircle, Loader2, Eye, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { faceRecognitionService } from "@/utils/faceRecognition";
+import { enhancedFaceRecognitionService } from "@/utils/enhancedFaceRecognition";
 import { useCamera } from "@/hooks/useCamera";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 interface FaceAuthProps {
   onSuccess?: () => void | Promise<void>;
@@ -15,9 +16,12 @@ interface FaceAuthProps {
 
 export const FaceAuth = ({ onSuccess, onFailure }: FaceAuthProps = {}) => {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [authStatus, setAuthStatus] = useState<'idle' | 'success' | 'failed'>('idle');
+  const [authStatus, setAuthStatus] = useState<'idle' | 'processing' | 'success' | 'failed'>('idle');
   const [confidence, setConfidence] = useState<number>(0);
   const [faceDetected, setFaceDetected] = useState(false);
+  const [livenessStatus, setLivenessStatus] = useState<'checking' | 'passed' | 'failed' | 'idle'>('idle');
+  const [securityProgress, setSecurityProgress] = useState(0);
+  const [currentCheck, setCurrentCheck] = useState<string>('');
 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -49,10 +53,9 @@ export const FaceAuth = ({ onSuccess, onFailure }: FaceAuthProps = {}) => {
       return;
     }
 
-    // Initialize face recognition and camera
     const initializeAuth = async () => {
       try {
-        await faceRecognitionService.initialize();
+        await enhancedFaceRecognitionService.initialize();
         await requestCameraAccess();
       } catch (error) {
         console.error('Auth initialization failed:', error);
@@ -63,10 +66,11 @@ export const FaceAuth = ({ onSuccess, onFailure }: FaceAuthProps = {}) => {
     
     return () => {
       stopCamera();
+      enhancedFaceRecognitionService.cleanup();
     };
   }, [user, requestCameraAccess, stopCamera, navigate, toast]);
 
-  // Start face detection when camera is ready
+  // Start enhanced face detection when camera is ready
   useEffect(() => {
     if (!stream || !videoRef.current) return;
 
@@ -76,13 +80,21 @@ export const FaceAuth = ({ onSuccess, onFailure }: FaceAuthProps = {}) => {
       detectionInterval = setInterval(async () => {
         if (videoRef.current && !isProcessing) {
           try {
-            const detected = await faceRecognitionService.detectFace(videoRef.current);
-            setFaceDetected(detected);
+            const detection = await enhancedFaceRecognitionService.detectFaceWithQuality(videoRef.current);
+            setFaceDetected(detection.detected);
+            
+            // Perform liveness check
+            if (detection.detected) {
+              const liveness = await enhancedFaceRecognitionService.performLivenessCheck(videoRef.current);
+              setLivenessStatus(liveness.isLive ? 'passed' : 'checking');
+            } else {
+              setLivenessStatus('idle');
+            }
           } catch (error) {
-            console.error('Face detection error:', error);
+            console.error('Enhanced face detection error:', error);
           }
         }
-      }, 500);
+      }, 200);
     };
 
     setTimeout(startDetection, 1000);
@@ -99,24 +111,51 @@ export const FaceAuth = ({ onSuccess, onFailure }: FaceAuthProps = {}) => {
     
     try {
       setIsProcessing(true);
-      setAuthStatus('idle');
+      setAuthStatus('processing');
+      setSecurityProgress(0);
+      setCurrentCheck('Initializing security checks...');
       
-      const currentEmbedding = await faceRecognitionService.extractFaceEmbedding(videoRef.current);
+      // Perform comprehensive security checks
+      setCurrentCheck('Detecting face...');
+      setSecurityProgress(25);
+      const securityChecks = await enhancedFaceRecognitionService.performSecurityChecks(videoRef.current);
+      
+      if (!securityChecks.faceDetection.passed) {
+        throw new Error('Face detection failed: ' + securityChecks.faceDetection.reason);
+      }
+      
+      setCurrentCheck('Verifying liveness...');
+      setSecurityProgress(50);
+      if (!securityChecks.liveness.passed) {
+        throw new Error('Liveness verification failed: ' + securityChecks.liveness.reason);
+      }
+      
+      setCurrentCheck('Analyzing image quality...');
+      setSecurityProgress(75);
+      if (!securityChecks.quality.passed) {
+        console.warn('Quality check warning:', securityChecks.quality.reason);
+      }
+      
+      setCurrentCheck('Extracting facial features...');
+      const currentEmbedding = await enhancedFaceRecognitionService.extractFaceEmbedding(videoRef.current);
       
       if (!currentEmbedding) {
-        throw new Error('Failed to extract face features');
+        throw new Error('Failed to extract facial features');
       }
 
+      setCurrentCheck('Comparing with registered face...');
+      setSecurityProgress(90);
       const registeredEmbedding = user.user_metadata?.face_embedding;
-      const similarity = faceRecognitionService.compareFaceEmbeddings(currentEmbedding, registeredEmbedding);
+      const comparison = enhancedFaceRecognitionService.compareFaceEmbeddings(currentEmbedding, registeredEmbedding);
       
-      setConfidence(similarity);
+      setConfidence(comparison.similarity);
+      setSecurityProgress(100);
       
-      if (similarity > 0.7) {
+      if (comparison.match) {
         setAuthStatus('success');
         toast({
           title: "Authentication Successful",
-          description: `Face verified with ${Math.round(similarity * 100)}% similarity.`,
+          description: `Face verified with ${Math.round(comparison.similarity * 100)}% similarity.`,
         });
         
         if (onSuccess) {
@@ -131,7 +170,7 @@ export const FaceAuth = ({ onSuccess, onFailure }: FaceAuthProps = {}) => {
         setAuthStatus('failed');
         toast({
           title: "Authentication Failed",
-          description: "Face verification failed. Please try again.",
+          description: `Face verification failed. Similarity: ${Math.round(comparison.similarity * 100)}% (Required: ${Math.round(comparison.threshold * 100)}%)`,
           variant: "destructive",
         });
         
@@ -140,7 +179,7 @@ export const FaceAuth = ({ onSuccess, onFailure }: FaceAuthProps = {}) => {
         }
       }
     } catch (error) {
-      console.error("Face verification failed:", error);
+      console.error("Enhanced face verification failed:", error);
       setAuthStatus('failed');
       toast({
         title: "Authentication Error",
@@ -153,6 +192,7 @@ export const FaceAuth = ({ onSuccess, onFailure }: FaceAuthProps = {}) => {
       }
     } finally {
       setIsProcessing(false);
+      setCurrentCheck('');
     }
   };
 
@@ -173,9 +213,9 @@ export const FaceAuth = ({ onSuccess, onFailure }: FaceAuthProps = {}) => {
     <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
       <div className="text-center mb-6">
         <Camera className="h-12 w-12 text-vote-teal mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-vote-blue mb-2">Face Verification</h2>
+        <h2 className="text-2xl font-bold text-vote-blue mb-2">Enhanced Face Verification</h2>
         <p className="text-gray-600">
-          Look directly at the camera for verification
+          Advanced biometric authentication with liveness detection
         </p>
       </div>
 
@@ -215,9 +255,31 @@ export const FaceAuth = ({ onSuccess, onFailure }: FaceAuthProps = {}) => {
           </div>
         )}
 
+        {/* Face detection indicator */}
         {faceDetected && stream && !isProcessing && authStatus === 'idle' && (
-          <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs">
+          <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs flex items-center">
+            <Camera className="h-3 w-3 mr-1" />
             Face Detected
+          </div>
+        )}
+
+        {/* Liveness indicator */}
+        {livenessStatus === 'passed' && !isProcessing && (
+          <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 rounded text-xs flex items-center">
+            <Eye className="h-3 w-3 mr-1" />
+            Live
+          </div>
+        )}
+        
+        {/* Processing overlay */}
+        {authStatus === 'processing' && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 rounded-lg">
+            <div className="text-center text-white p-4">
+              <Shield className="h-8 w-8 animate-pulse mx-auto mb-2" />
+              <p className="font-medium mb-2">{currentCheck}</p>
+              <Progress value={securityProgress} className="w-48 mb-2" />
+              <p className="text-xs">{securityProgress}% Complete</p>
+            </div>
           </div>
         )}
         
@@ -244,7 +306,7 @@ export const FaceAuth = ({ onSuccess, onFailure }: FaceAuthProps = {}) => {
 
       <Button
         onClick={captureAndVerify}
-        disabled={cameraLoading || isProcessing || !faceDetected || authStatus === 'success' || !stream}
+        disabled={cameraLoading || isProcessing || !faceDetected || authStatus === 'success' || !stream || livenessStatus !== 'passed'}
         className="w-full bg-vote-blue hover:bg-vote-teal text-white py-3 px-4"
       >
         {isProcessing ? (
@@ -254,11 +316,17 @@ export const FaceAuth = ({ onSuccess, onFailure }: FaceAuthProps = {}) => {
           </>
         ) : (
           <>
-            <Camera className="h-5 w-5 mr-2" />
+            <Shield className="h-5 w-5 mr-2" />
             Verify Face
           </>
         )}
       </Button>
+
+      {faceDetected && livenessStatus !== 'passed' && (
+        <p className="text-center text-sm text-gray-600 mt-2">
+          Please move slightly to verify you're live
+        </p>
+      )}
     </div>
   );
 };
