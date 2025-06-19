@@ -4,7 +4,6 @@ import { BallotCard } from "@/components/elections/BallotCard";
 import { Link, useParams } from "react-router-dom";
 import { CalendarIcon, ChevronLeftIcon, AlertTriangleIcon, InfoIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { PollStation } from "@/components/elections/PollStation";
 
 interface CandidateMock {
   id: string;
@@ -183,15 +182,6 @@ const ElectionDetailPage = () => {
                 </ul>
               </div>
             ))}
-          </div>
-        )}
-        
-        {(election.status === "Active" || election.status === "Completed") && (
-          <div className="mt-12">
-            <h2 className="text-2xl font-semibold text-vote-blue mb-6">
-              {election.status === "Active" ? "Live Election Results" : "Final Election Results"}
-            </h2>
-            <PollStation electionId={election.dbElectionId} />
           </div>
         )}
 
