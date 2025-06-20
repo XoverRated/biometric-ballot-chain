@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
@@ -22,57 +21,113 @@ export const FaceRegister = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const initializingRef = useRef(false);
   const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const cleanupRef = useRef(false);
+  const videoReadyRef = useRef(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const cleanup = useCallback(() => {
-    console.log('FaceRegister: Starting cleanup');
-    
-    // Stop detection interval
+  const stopDetection = useCallback(() => {
     if (detectionIntervalRef.current) {
       clearInterval(detectionIntervalRef.current);
       detectionIntervalRef.current = null;
+      console.log('FaceRegister: Detection interval stopped');
     }
+  }, []);
+
+  const cleanup = useCallback(() => {
+    if (cleanupRef.current) {
+      console.log('FaceRegister: Cleanup already in progress, skipping');
+      return;
+    }
+    
+    cleanupRef.current = true;
+    console.log('FaceRegister: Starting cleanup');
+    
+    // Stop detection first
+    stopDetection();
 
     // Stop media stream
     if (stream) {
       stream.getTracks().forEach(track => {
         track.stop();
-        console.log(`Stopped ${track.kind} track`);
+        console.log(`Stopped ${track.kind} track:`, track.id);
       });
       setStream(null);
     }
 
-    // Clear video element
+    // Clear video element safely
     if (videoRef.current) {
-      videoRef.current.srcObject = null;
-      videoRef.current.load(); // Reset video element
+      const video = videoRef.current;
+      video.pause();
+      video.srcObject = null;
+      video.removeAttribute('src');
+      video.load();
     }
+
+    // Reset state
+    videoReadyRef.current = false;
+    setFaceDetected(false);
+    setQualityScore(0);
 
     // Cleanup face recognition service
     enhancedFaceRecognitionService.cleanup();
     
     console.log('FaceRegister: Cleanup completed');
-  }, [stream]);
+    cleanupRef.current = false;
+  }, [stream, stopDetection]);
+
+  const startFaceDetection = useCallback(() => {
+    if (!videoReadyRef.current || detectionIntervalRef.current) {
+      console.log('FaceRegister: Video not ready or detection already running');
+      return;
+    }
+
+    console.log('FaceRegister: Starting face detection');
+    
+    const detectFaces = async () => {
+      if (!videoRef.current || isCapturing || !stream || !videoReadyRef.current) {
+        return;
+      }
+
+      try {
+        const detection = await enhancedFaceRecognitionService.detectFaceWithQuality(videoRef.current);
+        setFaceDetected(detection.detected);
+        setQualityScore(detection.quality);
+      } catch (err) {
+        console.warn('FaceRegister: Face detection error', err);
+      }
+    };
+
+    // Start detection with a longer interval to reduce load
+    detectionIntervalRef.current = setInterval(detectFaces, 300);
+  }, [isCapturing, stream]);
 
   const initializeFaceRegister = useCallback(async () => {
+    // Prevent multiple simultaneous initializations
     if (initializingRef.current) {
       console.log('FaceRegister: Already initializing, skipping');
       return;
     }
 
+    // Clean up any existing resources first
+    cleanup();
+
     try {
       initializingRef.current = true;
       setIsInitializing(true);
       setError(null);
+      videoReadyRef.current = false;
       
       console.log('FaceRegister: Starting initialization');
       
-      // Initialize face recognition service
+      // Initialize face recognition service first
       await enhancedFaceRecognitionService.initialize();
       console.log('FaceRegister: Face recognition service initialized');
+      
+      // Small delay to ensure cleanup is complete
+      await new Promise(resolve => setTimeout(resolve, 200));
       
       // Request camera access
       const mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -87,25 +142,44 @@ export const FaceRegister = () => {
       console.log('FaceRegister: Camera access granted');
       setStream(mediaStream);
       
-      // Set up video element
+      // Set up video element with proper sequencing
       if (videoRef.current) {
         const video = videoRef.current;
         
-        // Wait for any existing operations to complete
+        // Ensure video is in a clean state
+        video.pause();
+        video.srcObject = null;
+        video.load();
+        
+        // Wait for load to complete
         await new Promise(resolve => setTimeout(resolve, 100));
         
+        // Set the new stream
         video.srcObject = mediaStream;
         
         // Wait for video to be ready
         await new Promise<void>((resolve, reject) => {
-          const onLoadedMetadata = () => {
-            console.log('FaceRegister: Video metadata loaded');
+          const timeout = setTimeout(() => {
             video.removeEventListener('loadedmetadata', onLoadedMetadata);
             video.removeEventListener('error', onError);
+            reject(new Error('Video setup timeout'));
+          }, 10000);
+
+          const onLoadedMetadata = () => {
+            clearTimeout(timeout);
+            console.log('FaceRegister: Video metadata loaded', {
+              width: video.videoWidth,
+              height: video.videoHeight,
+              readyState: video.readyState
+            });
+            video.removeEventListener('loadedmetadata', onLoadedMetadata);
+            video.removeEventListener('error', onError);
+            videoReadyRef.current = true;
             resolve();
           };
 
           const onError = (e: Event) => {
+            clearTimeout(timeout);
             console.error('FaceRegister: Video error', e);
             video.removeEventListener('loadedmetadata', onLoadedMetadata);
             video.removeEventListener('error', onError);
@@ -116,14 +190,25 @@ export const FaceRegister = () => {
           video.addEventListener('error', onError);
           
           // Start playing the video
-          video.play().catch(reject);
+          video.play().catch(err => {
+            clearTimeout(timeout);
+            video.removeEventListener('loadedmetadata', onLoadedMetadata);
+            video.removeEventListener('error', onError);
+            reject(err);
+          });
         });
         
-        console.log('FaceRegister: Video setup completed');
+        console.log('FaceRegister: Video setup completed successfully');
       }
       
       setIsInitializing(false);
-      startFaceDetection();
+      
+      // Start face detection after a small delay to ensure everything is stable
+      setTimeout(() => {
+        if (videoReadyRef.current && !cleanupRef.current) {
+          startFaceDetection();
+        }
+      }, 500);
       
     } catch (err) {
       console.error('FaceRegister: Initialization failed', err);
@@ -136,6 +221,8 @@ export const FaceRegister = () => {
           errorMessage = 'No camera found. Please connect a camera and try again.';
         } else if (err.name === 'NotReadableError') {
           errorMessage = 'Camera is already in use by another application.';
+        } else if (err.message.includes('timeout')) {
+          errorMessage = 'Camera initialization timed out. Please try again.';
         } else {
           errorMessage = err.message;
         }
@@ -143,31 +230,11 @@ export const FaceRegister = () => {
       
       setError(errorMessage);
       setIsInitializing(false);
+      videoReadyRef.current = false;
     } finally {
       initializingRef.current = false;
     }
-  }, []);
-
-  const startFaceDetection = useCallback(() => {
-    console.log('FaceRegister: Starting face detection');
-    
-    const detectFaces = async () => {
-      if (!videoRef.current || isCapturing || !stream) {
-        return;
-      }
-
-      try {
-        const detection = await enhancedFaceRecognitionService.detectFaceWithQuality(videoRef.current);
-        setFaceDetected(detection.detected);
-        setQualityScore(detection.quality);
-      } catch (err) {
-        console.warn('FaceRegister: Face detection error', err);
-      }
-    };
-
-    // Start detection loop
-    detectionIntervalRef.current = setInterval(detectFaces, 200);
-  }, [isCapturing, stream]);
+  }, [cleanup, startFaceDetection]);
 
   useEffect(() => {
     if (!user) {
@@ -176,9 +243,15 @@ export const FaceRegister = () => {
       return;
     }
     
-    initializeFaceRegister();
+    // Initialize after a small delay to ensure component is fully mounted
+    const initTimeout = setTimeout(() => {
+      initializeFaceRegister();
+    }, 100);
     
-    return cleanup;
+    return () => {
+      clearTimeout(initTimeout);
+      cleanup();
+    };
   }, [user, initializeFaceRegister, cleanup, navigate, toast]);
 
   const handleRegister = async () => {
