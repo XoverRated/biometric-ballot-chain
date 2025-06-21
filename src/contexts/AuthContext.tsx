@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +16,7 @@ interface UserProfile {
 interface AuthContextType {
   session: Session | null;
   user: User | null;
-  profile: UserProfile | null; // Add profile here
+  profile: UserProfile | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -27,7 +28,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null); // Add profile state
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -40,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .eq('id', userId)
           .single();
 
-        if (error && status !== 406) { // 406 means no rows found, which is fine if profile not created yet
+        if (error && status !== 406) {
           console.error("Error fetching profile:", error);
           setProfile(null);
           return;
@@ -62,13 +63,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const currentUser = session?.user ?? null;
         setUser(currentUser);
         if (currentUser) {
-          // Fetch profile when auth state changes and user is present
-          // Use setTimeout to avoid potential deadlocks with onAuthStateChange
           setTimeout(() => fetchUserProfile(currentUser.id), 0);
         } else {
-          setProfile(null); // Clear profile on logout
+          setProfile(null);
         }
-        // setLoading(false) will be handled after initial session check or profile fetch
       }
     );
 
@@ -81,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setProfile(null);
       }
-      setLoading(false); // Set loading to false after initial session and profile check
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -103,20 +101,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error;
       }
 
-      // After successful sign-in, user state will be updated by onAuthStateChange,
-      // which will also trigger profile fetching.
-
       toast({
         title: "Sign In Successful",
         description: "Welcome back!",
       });
-      // No explicit navigation here, let calling component or onAuthStateChange side-effects handle it.
-      // Example: if (signInData.user) { fetchUserProfile(signInData.user.id); }
-      // But onAuthStateChange should cover this.
 
     } catch (error) {
       console.error("Error signing in:", error);
-      // toast already shown or error re-thrown
       throw error;
     }
   };
@@ -141,8 +132,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         throw error;
       }
-      // Profile creation is handled by a DB trigger 'handle_new_user'.
-      // onAuthStateChange will pick up the new user and fetch profile.
 
       toast({
         title: "Sign Up Successful",
@@ -168,7 +157,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error;
       }
 
-      // User and profile states will be cleared by onAuthStateChange
       toast({
         title: "Signed Out",
         description: "You have been signed out successfully.",
@@ -183,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = {
     session,
     user,
-    profile, // Provide profile in context
+    profile,
     signIn,
     signUp,
     signOut,
