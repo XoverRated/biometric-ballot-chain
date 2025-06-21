@@ -1,18 +1,23 @@
 
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Fingerprint, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { Fingerprint, Loader2, CheckCircle, AlertCircle, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { webAuthnService } from "@/utils/webAuthnService";
+import { biometricService } from "@/utils/biometricService";
 
 export const FingerprintRegister = () => {
-  const [isSupported, setIsSupported] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [registrationComplete, setRegistrationComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [captureProgress, setCaptureProgress] = useState(0);
+  
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -29,91 +34,118 @@ export const FingerprintRegister = () => {
       return;
     }
 
-    checkSupport();
+    initializeCamera();
+
+    return () => {
+      biometricService.cleanup();
+    };
   }, [user, navigate, toast]);
 
-  const checkSupport = async () => {
-    const supported = webAuthnService.isSupported();
-    setIsSupported(supported);
-    
-    if (supported) {
-      const available = await webAuthnService.isBiometricAvailable();
-      setBiometricAvailable(available);
-      
-      if (!available) {
-        setError("No biometric authenticator found. Please ensure your device has a fingerprint sensor or other biometric hardware.");
-      }
-    } else {
-      setError("WebAuthn not supported in this browser. Please use a modern browser with biometric support.");
-    }
-  };
-
-  const handleRegister = async () => {
-    if (!user) {
-      setError("Cannot register - user not available");
-      return;
-    }
-
-    setIsRegistering(true);
+  const initializeCamera = async () => {
+    setIsInitializing(true);
     setError(null);
 
     try {
-      const result = await webAuthnService.registerBiometric(
-        user.id,
-        user.email || user.user_metadata?.full_name || 'User'
-      );
-
-      if (result.success) {
-        setRegistrationComplete(true);
-        
-        toast({
-          title: "Fingerprint Registration Successful",
-          description: "Your biometric data has been registered securely.",
-        });
-        
-        setTimeout(() => {
-          navigate("/fingerprint-auth");
-        }, 2000);
-      } else {
-        throw new Error(result.error || 'Registration failed');
+      const videoElement = await biometricService.initializeCamera();
+      
+      if (containerRef.current) {
+        videoElement.style.width = '100%';
+        videoElement.style.height = '300px';
+        videoElement.style.objectFit = 'cover';
+        videoElement.style.borderRadius = '8px';
+        containerRef.current.appendChild(videoElement);
+        videoRef.current = videoElement;
       }
 
+      setCameraReady(true);
+      toast({
+        title: "Camera Ready",
+        description: "Place your finger over the camera lens to scan.",
+      });
+
     } catch (err) {
-      console.error('Registration error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Registration failed';
+      console.error('Camera initialization failed:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Camera initialization failed';
       setError(errorMessage);
       
       toast({
-        title: "Registration Failed",
+        title: "Camera Error",
         description: errorMessage,
         variant: "destructive",
       });
     } finally {
+      setIsInitializing(false);
+    }
+  };
+
+  const handleCapture = async () => {
+    if (!videoRef.current || !user) {
+      setError("Camera not ready or user not available");
+      return;
+    }
+
+    setIsCapturing(true);
+    setError(null);
+    setCaptureProgress(0);
+
+    try {
+      // Simulate capture progress
+      const progressInterval = setInterval(() => {
+        setCaptureProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 200);
+
+      // Capture fingerprint template
+      const template = await biometricService.captureFingerprint(videoRef.current);
+      
+      clearInterval(progressInterval);
+      setCaptureProgress(100);
+
+      // Small delay for UX
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      setIsRegistering(true);
+
+      // Store in database
+      const templateId = await biometricService.storeFingerprintTemplate(user.id, template);
+      
+      setRegistrationComplete(true);
+      
+      toast({
+        title: "Fingerprint Registered",
+        description: "Your fingerprint has been successfully registered and stored.",
+      });
+      
+      setTimeout(() => {
+        navigate("/fingerprint-auth");
+      }, 2000);
+
+    } catch (err) {
+      console.error('Fingerprint capture failed:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Fingerprint capture failed';
+      setError(errorMessage);
+      
+      toast({
+        title: "Capture Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsCapturing(false);
       setIsRegistering(false);
+      setCaptureProgress(0);
     }
   };
 
   const handleSkip = () => {
+    biometricService.cleanup();
     navigate("/elections");
   };
-
-  if (!isSupported) {
-    return (
-      <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-vote-blue mb-4">Biometric Not Supported</h2>
-          <p className="text-gray-600 mb-6">
-            Your browser or device doesn't support biometric authentication. 
-            Please use a modern browser with WebAuthn support.
-          </p>
-          <Button onClick={handleSkip} className="w-full">
-            Continue Without Biometrics
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
@@ -124,13 +156,58 @@ export const FingerprintRegister = () => {
       </div>
 
       <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-        <h3 className="font-semibold text-vote-blue mb-2">How it works:</h3>
+        <h3 className="font-semibold text-vote-blue mb-2">Instructions:</h3>
         <ul className="text-sm text-gray-600 space-y-1">
-          <li>• Your fingerprint is stored securely on your device</li>
-          <li>• Multiple users can register on the same device</li>
-          <li>• Each registration is linked to your account</li>
-          <li>• No biometric data is sent to our servers</li>
+          <li>• Place your finger over the camera lens</li>
+          <li>• Keep your finger steady during scanning</li>
+          <li>• Ensure good lighting for best results</li>
+          <li>• Your fingerprint data is stored securely</li>
         </ul>
+      </div>
+
+      {/* Camera Container */}
+      <div className="mb-6">
+        <div 
+          ref={containerRef}
+          className={`relative border-2 rounded-lg overflow-hidden ${
+            cameraReady ? 'border-green-300' : 'border-gray-300'
+          }`}
+          style={{ height: '300px', backgroundColor: '#f3f4f6' }}
+        >
+          {isInitializing && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin text-vote-blue mx-auto mb-2" />
+                <p className="text-sm text-gray-600">Initializing camera...</p>
+              </div>
+            </div>
+          )}
+          
+          {!isInitializing && !cameraReady && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+              <div className="text-center">
+                <Camera className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600">Camera not ready</p>
+              </div>
+            </div>
+          )}
+
+          {/* Capture Progress Overlay */}
+          {isCapturing && (
+            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+              <div className="text-center text-white">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                <p>Scanning fingerprint...</p>
+                <div className="w-32 bg-gray-600 rounded-full h-2 mt-2">
+                  <div 
+                    className="bg-vote-teal h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${captureProgress}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -150,19 +227,19 @@ export const FingerprintRegister = () => {
       <div className="space-y-3">
         {!registrationComplete && (
           <Button
-            onClick={handleRegister}
-            disabled={isRegistering || !biometricAvailable}
+            onClick={handleCapture}
+            disabled={!cameraReady || isCapturing || isRegistering || isInitializing}
             className="w-full bg-vote-blue hover:bg-vote-teal text-white"
           >
-            {isRegistering ? (
+            {isCapturing || isRegistering ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                Registering...
+                {isCapturing ? 'Scanning...' : 'Storing...'}
               </>
             ) : (
               <>
                 <Fingerprint className="h-5 w-5 mr-2" />
-                Register Fingerprint
+                Scan Fingerprint
               </>
             )}
           </Button>
@@ -172,7 +249,7 @@ export const FingerprintRegister = () => {
           onClick={handleSkip}
           variant="outline"
           className="w-full"
-          disabled={isRegistering}
+          disabled={isCapturing || isRegistering}
         >
           Skip for Now
         </Button>
