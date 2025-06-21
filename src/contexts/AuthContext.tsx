@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -114,13 +113,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             full_name: fullName,
           },
+          emailRedirectTo: `${window.location.origin}/`,
         },
       });
 
@@ -133,9 +133,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error;
       }
 
+      // Send registration confirmation email
+      try {
+        const { error: emailError } = await supabase.functions.invoke('send-registration-email', {
+          body: { email, fullName }
+        });
+        
+        if (emailError) {
+          console.error("Failed to send registration email:", emailError);
+        }
+      } catch (emailErr) {
+        console.error("Email service error:", emailErr);
+      }
+
       toast({
         title: "Sign Up Successful",
-        description: "Welcome! Please verify your email to continue.",
+        description: "Welcome! Please check your email for confirmation and complete your biometric setup.",
       });
 
     } catch (error) {
