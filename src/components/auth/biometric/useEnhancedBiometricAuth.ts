@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { SecurityCheck } from "@/types/biometric";
 import { logger } from "@/utils/logger";
 import { biometricService } from "@/utils/biometricService";
+import { Camera, Eye, Shield, Fingerprint, AlertTriangle } from "lucide-react";
 
 export const useEnhancedBiometricAuth = () => {
   const [isInitializing, setIsInitializing] = useState(true);
@@ -15,11 +16,36 @@ export const useEnhancedBiometricAuth = () => {
   const [authSuccess, setAuthSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [securityChecks, setSecurityChecks] = useState<SecurityCheck[]>([
-    { name: "Camera Access", status: "pending" },
-    { name: "Face Detection", status: "pending" },
-    { name: "Liveness Detection", status: "pending" },
-    { name: "Template Matching", status: "pending" },
-    { name: "Anti-Spoofing", status: "pending" }
+    { 
+      name: "Camera Access", 
+      status: "pending",
+      description: "Initializing camera for biometric capture",
+      icon: <Camera className="h-4 w-4" />
+    },
+    { 
+      name: "Face Detection", 
+      status: "pending",
+      description: "Detecting face presence and positioning",
+      icon: <Eye className="h-4 w-4" />
+    },
+    { 
+      name: "Liveness Detection", 
+      status: "pending",
+      description: "Verifying live person (anti-spoofing)",
+      icon: <Shield className="h-4 w-4" />
+    },
+    { 
+      name: "Template Matching", 
+      status: "pending",
+      description: "Comparing biometric template with stored data",
+      icon: <Fingerprint className="h-4 w-4" />
+    },
+    { 
+      name: "Anti-Spoofing", 
+      status: "pending",
+      description: "Advanced security validation checks",
+      icon: <AlertTriangle className="h-4 w-4" />
+    }
   ]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
