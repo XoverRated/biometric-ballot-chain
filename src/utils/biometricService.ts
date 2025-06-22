@@ -185,7 +185,7 @@ class BiometricService {
       return data?.map(row => ({
         id: row.id,
         userId: row.user_id,
-        template: row.template_data,
+        template: row.template_data as number[],
         quality: row.quality_score,
         createdAt: row.created_at
       })) || [];

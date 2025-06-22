@@ -4,8 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { SecurityCheck } from "@/types/biometric";
-import { biometricWorker } from "@/workers/biometricWorker";
 import { logger } from "@/utils/logger";
+import { biometricService } from "@/utils/biometricService";
 
 export const useBiometricAuth = (frameHistoryRef: React.RefObject<ImageData[]>, videoRef: React.RefObject<HTMLVideoElement>) => {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -27,62 +27,45 @@ export const useBiometricAuth = (frameHistoryRef: React.RefObject<ImageData[]>, 
   const handleAuthenticate = async () => {
     logger.info('BiometricAuth', 'Starting biometric authentication process', {
       userId: user?.id,
-      hasVideo: !!videoRef.current,
-      hasFrameHistory: !!frameHistoryRef.current?.length
+      hasVideo: !!videoRef.current
     });
 
-    if (!user || !videoRef.current || !frameHistoryRef.current) {
+    if (!user || !videoRef.current) {
       const errorMsg = "Cannot authenticate - user or camera not available";
       logger.error('BiometricAuth', errorMsg, undefined, {
         hasUser: !!user,
-        hasVideo: !!videoRef.current,
-        hasFrameHistory: !!frameHistoryRef.current
+        hasVideo: !!videoRef.current
       });
       throw new Error(errorMsg);
     }
 
-    const registeredEmbedding = user.user_metadata?.face_embedding;
-    if (!registeredEmbedding) {
-      const errorMsg = "No registered face data found";
-      logger.error('BiometricAuth', errorMsg, undefined, { userId: user.id });
-      throw new Error(errorMsg);
-    }
-
-    logger.info('BiometricAuth', 'Initializing authentication with registered embedding', {
-      embeddingLength: registeredEmbedding.length,
-      frameHistoryLength: frameHistoryRef.current.length
+    logger.info('BiometricAuth', 'Starting fingerprint authentication', {
+      userId: user.id
     });
 
     setIsAuthenticating(true);
     setAuthProgress(0);
 
     try {
-      logger.debug('BiometricAuth', 'Starting Web Worker authentication process');
+      logger.debug('BiometricAuth', 'Starting fingerprint verification process');
 
-      // Use Web Worker for heavy processing
-      const result = await biometricWorker.authenticate({
-        videoElement: videoRef.current,
-        frameHistory: frameHistoryRef.current,
-        registeredEmbedding,
-        landmarks: user.user_metadata?.face_landmarks,
-        onProgress: (progress, checkIndex, status) => {
-          logger.debug('BiometricAuth', 'Authentication progress update', {
-            progress,
-            checkIndex,
-            status
-          });
-          
-          setAuthProgress(progress);
-          if (checkIndex !== undefined && status) {
-            // Convert string status to proper SecurityCheck status type
-            const validStatus: SecurityCheck['status'] = 
-              status === 'checking' ? 'checking' :
-              status === 'passed' ? 'passed' :
-              status === 'failed' ? 'failed' : 'pending';
-            updateSecurityCheck(checkIndex, validStatus);
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setAuthProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
           }
-        }
-      });
+          return prev + 15;
+        });
+      }, 300);
+
+      // Capture fingerprint and verify
+      const capturedTemplate = await biometricService.captureFingerprint(videoRef.current);
+      const result = await biometricService.verifyFingerprint(user.id, capturedTemplate);
+
+      clearInterval(progressInterval);
+      setAuthProgress(100);
 
       if (result.success) {
         logger.info('BiometricAuth', 'Authentication successful', {
@@ -93,16 +76,16 @@ export const useBiometricAuth = (frameHistoryRef: React.RefObject<ImageData[]>, 
         setAuthSuccess(true);
         toast({
           title: "Authentication Successful",
-          description: `Face verified with ${Math.round(result.similarity * 100)}% similarity.`,
+          description: `Fingerprint verified with ${Math.round(result.similarity * 100)}% similarity.`,
         });
         
         setTimeout(() => {
           navigate("/elections");
         }, 2000);
       } else {
-        const errorMsg = result.error || 'Authentication failed';
-        logger.error('BiometricAuth', 'Authentication failed from worker', undefined, {
-          error: errorMsg,
+        const errorMsg = `Fingerprint verification failed. Similarity: ${Math.round(result.similarity * 100)}%`;
+        logger.error('BiometricAuth', 'Authentication failed', undefined, {
+          similarity: result.similarity,
           userId: user.id
         });
         throw new Error(errorMsg);
@@ -112,8 +95,7 @@ export const useBiometricAuth = (frameHistoryRef: React.RefObject<ImageData[]>, 
       
       logger.error('BiometricAuth', 'Authentication process failed', err instanceof Error ? err : new Error(errorMessage), {
         userId: user.id,
-        authProgress,
-        securityChecksStatus: securityChecks.map(check => ({ name: check.name, status: check.status }))
+        authProgress
       });
 
       setSecurityChecks(prev => prev.map(check => 
