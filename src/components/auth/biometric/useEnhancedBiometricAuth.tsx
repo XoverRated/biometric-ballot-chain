@@ -1,177 +1,150 @@
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { SecurityCheck } from "@/types/biometric";
+import { useBiometricCamera } from "@/hooks/biometric/useBiometricCamera";
+import { useBiometricAuth } from "@/hooks/biometric/useBiometricAuth";
+import { Camera, Eye, Shield, Zap } from "lucide-react";
 import { logger } from "@/utils/logger";
-import { biometricService } from "@/utils/biometricService";
-import { Camera, Eye, Shield, Fingerprint, AlertTriangle } from "lucide-react";
 
 export const useEnhancedBiometricAuth = () => {
-  const [isInitializing, setIsInitializing] = useState(true);
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [faceDetected, setFaceDetected] = useState(false);
-  const [authProgress, setAuthProgress] = useState(0);
-  const [authSuccess, setAuthSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [securityChecks, setSecurityChecks] = useState<SecurityCheck[]>([
-    { 
-      name: "Camera Access", 
-      status: "pending",
-      description: "Initializing camera for biometric capture",
-      icon: <Camera className="h-4 w-4" />
-    },
-    { 
-      name: "Face Detection", 
-      status: "pending",
-      description: "Detecting face presence and positioning",
-      icon: <Eye className="h-4 w-4" />
-    },
-    { 
-      name: "Liveness Detection", 
-      status: "pending",
-      description: "Verifying live person (anti-spoofing)",
-      icon: <Shield className="h-4 w-4" />
-    },
-    { 
-      name: "Template Matching", 
-      status: "pending",
-      description: "Comparing biometric template with stored data",
-      icon: <Fingerprint className="h-4 w-4" />
-    },
-    { 
-      name: "Anti-Spoofing", 
-      status: "pending",
-      description: "Advanced security validation checks",
-      icon: <AlertTriangle className="h-4 w-4" />
-    }
-  ]);
-
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const updateSecurityCheck = (index: number, status: SecurityCheck['status']) => {
-    setSecurityChecks(prev => prev.map((check, i) => 
-      i === index ? { ...check, status } : check
-    ));
-  };
+  const {
+    stream,
+    faceDetected,
+    isInitializing,
+    error: cameraError,
+    videoRef,
+    canvasRef,
+    frameHistoryRef,
+    initializeCamera,
+    startFaceDetection,
+    cleanup
+  } = useBiometricCamera();
 
+  const {
+    isAuthenticating,
+    authProgress,
+    authSuccess,
+    securityChecks,
+    setSecurityChecks,
+    handleAuthenticate: performAuth
+  } = useBiometricAuth(frameHistoryRef, videoRef);
+
+  // Initialize security checks
   useEffect(() => {
-    const initializeCamera = async () => {
-      try {
-        updateSecurityCheck(0, 'checking');
-        
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480, facingMode: 'user' }
-        });
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await new Promise((resolve) => {
-            if (videoRef.current) {
-              videoRef.current.onloadedmetadata = resolve;
-            }
-          });
-        }
-
-        updateSecurityCheck(0, 'passed');
-        setIsInitializing(false);
-        
-        // Simulate face detection
-        setTimeout(() => {
-          setFaceDetected(true);
-          updateSecurityCheck(1, 'passed');
-        }, 1000);
-
-      } catch (err) {
-        logger.error('EnhancedBiometricAuth', 'Camera initialization failed', err as Error);
-        setError('Camera access denied. Please enable camera permissions.');
-        updateSecurityCheck(0, 'failed');
-        setIsInitializing(false);
+    logger.debug('EnhancedBiometricAuth', 'Initializing security checks');
+    setSecurityChecks([
+      {
+        name: 'Liveness Detection',
+        status: 'pending',
+        description: 'Verifying live human presence',
+        icon: <Eye className="h-4 w-4" />
+      },
+      {
+        name: 'Anti-Spoofing',
+        status: 'pending',
+        description: 'Detecting photo/video attacks',
+        icon: <Shield className="h-4 w-4" />
+      },
+      {
+        name: 'Quality Assessment',
+        status: 'pending',
+        description: 'Analyzing image quality',
+        icon: <Camera className="h-4 w-4" />
+      },
+      {
+        name: 'Face Matching',
+        status: 'pending',
+        description: 'Compare with registered face',
+        icon: <Zap className="h-4 w-4" />
       }
-    };
-
-    initializeCamera();
-
-    return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, []);
+    ]);
+  }, [setSecurityChecks]);
 
   const handleEnhancedAuthenticate = async () => {
-    if (!user || !videoRef.current) {
-      setError("Cannot authenticate - user or camera not available");
-      return;
-    }
-
-    setIsAuthenticating(true);
-    setAuthProgress(0);
-    setError(null);
+    logger.info('EnhancedBiometricAuth', 'Starting enhanced authentication process', {
+      userId: user?.id,
+      faceDetected,
+      cameraError
+    });
 
     try {
-      // Update security checks progressively
-      updateSecurityCheck(2, 'checking');
-      setAuthProgress(20);
-
-      await new Promise(resolve => setTimeout(resolve, 500));
-      updateSecurityCheck(2, 'passed');
-      updateSecurityCheck(3, 'checking');
-      setAuthProgress(40);
-
-      // Capture and verify fingerprint
-      const capturedTemplate = await biometricService.captureFingerprint(videoRef.current);
-      setAuthProgress(60);
-
-      updateSecurityCheck(3, 'passed');
-      updateSecurityCheck(4, 'checking');
-      setAuthProgress(80);
-
-      const result = await biometricService.verifyFingerprint(user.id, capturedTemplate);
-      setAuthProgress(100);
-
-      if (result.success) {
-        updateSecurityCheck(4, 'passed');
-        setAuthSuccess(true);
-        
-        toast({
-          title: "Enhanced Authentication Successful",
-          description: `Biometric verified with ${Math.round(result.similarity * 100)}% confidence.`,
-        });
-
-        setTimeout(() => {
-          navigate("/elections");
-        }, 2000);
-      } else {
-        updateSecurityCheck(4, 'failed');
-        throw new Error(`Enhanced verification failed. Confidence: ${Math.round(result.similarity * 100)}%`);
-      }
+      await performAuth();
+      logger.info('EnhancedBiometricAuth', 'Enhanced authentication successful, redirecting');
+      
+      setTimeout(() => {
+        cleanup();
+        navigate("/elections");
+      }, 2000);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Enhanced authentication failed';
-      setError(errorMessage);
       
-      securityChecks.forEach((check, index) => {
-        if (check.status === 'checking') {
-          updateSecurityCheck(index, 'failed');
-        }
+      logger.error('EnhancedBiometricAuth', 'Enhanced authentication failed', err instanceof Error ? err : new Error(errorMessage), {
+        userId: user?.id,
+        faceDetected,
+        authProgress
       });
 
       toast({
-        title: "Authentication Failed",
+        title: "Enhanced Authentication Failed",
         description: errorMessage,
         variant: "destructive",
       });
-    } finally {
-      setIsAuthenticating(false);
     }
   };
+
+  useEffect(() => {
+    logger.info('EnhancedBiometricAuth', 'Component initialized', {
+      hasUser: !!user,
+      userId: user?.id
+    });
+
+    if (!user) {
+      logger.warn('EnhancedBiometricAuth', 'No authenticated user found, redirecting to auth');
+      toast({ title: "User not authenticated", description: "Please sign in.", variant: "destructive" });
+      navigate("/auth");
+      return;
+    }
+
+    const registeredFaceEmbedding = user.user_metadata?.face_embedding;
+    if (!registeredFaceEmbedding) {
+      logger.warn('EnhancedBiometricAuth', 'No face embedding found for user, redirecting to registration', {
+        userId: user.id,
+        hasUserMetadata: !!user.user_metadata
+      });
+      
+      toast({
+        title: "No Face Data Found",
+        description: "Please register your face first.",
+        variant: "default",
+      });
+      navigate("/face-register");
+      return;
+    }
+    
+    const init = async () => {
+      logger.debug('EnhancedBiometricAuth', 'Initializing camera and face detection');
+      const success = await initializeCamera();
+      if (success) {
+        startFaceDetection();
+        logger.info('EnhancedBiometricAuth', 'Camera and face detection initialized successfully');
+      } else {
+        logger.error('EnhancedBiometricAuth', 'Failed to initialize camera');
+      }
+    };
+    
+    init();
+    
+    return () => {
+      logger.debug('EnhancedBiometricAuth', 'Component cleanup');
+      cleanup();
+    };
+  }, [user]);
 
   return {
     isInitializing,
@@ -179,7 +152,7 @@ export const useEnhancedBiometricAuth = () => {
     faceDetected,
     authProgress,
     authSuccess,
-    error,
+    error: cameraError,
     securityChecks,
     videoRef,
     canvasRef,

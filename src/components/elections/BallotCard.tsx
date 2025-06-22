@@ -39,15 +39,13 @@ export const BallotCard = ({ position, candidates, electionId }: BallotCardProps
     if (!selectedCandidate || !user || !electionId) {
         toast({
             title: "Error",
-            description: "Missing information to cast vote. Please ensure you are logged in and a candidate is selected.",
+            description: "Missing information to cast vote. Please ensure you are logged in and an election is selected.",
             variant: "destructive",
         });
         return;
     }
 
-    // For development, allow voting without wallet connection
-    const isDevelopment = !import.meta.env.PROD;
-    if (!isDevelopment && (!isConnected || !signer || !provider)) {
+    if (!isConnected || !signer || !provider) {
         setShowWalletConnect(true);
         return;
     }
@@ -55,21 +53,15 @@ export const BallotCard = ({ position, candidates, electionId }: BallotCardProps
     setIsSubmitting(true);
     
     try {
-      // Initialize blockchain service
-      if (isDevelopment) {
-        // Use mock service for development
-        await blockchainService.initialize(null, null);
-      } else {
-        // Use real blockchain service for production
-        await blockchainService.initialize(provider, signer);
-      }
+      // Initialize blockchain service with current Web3 connection
+      blockchainService.initialize(provider, signer);
 
       // Check if user has already voted on blockchain
       const hasVotedOnChain = await blockchainService.hasVoted(electionId, user.id);
       if (hasVotedOnChain) {
         toast({
           title: "Already Voted",
-          description: "You have already cast your vote in this election.",
+          description: "You have already cast your vote in this election on the blockchain.",
           variant: "destructive",
         });
         setIsSubmitting(false);
@@ -79,7 +71,7 @@ export const BallotCard = ({ position, candidates, electionId }: BallotCardProps
       // Cast vote on blockchain first
       toast({
         title: "Processing Vote",
-        description: "Submitting your vote securely...",
+        description: "Submitting your vote to the blockchain...",
       });
 
       const blockchainVote = await blockchainService.castVote(electionId, selectedCandidate, user.id);
@@ -116,7 +108,7 @@ export const BallotCard = ({ position, candidates, electionId }: BallotCardProps
         } else {
           toast({
             title: "Database Error",
-            description: "Vote was recorded securely but failed to save locally. Your vote is still valid.",
+            description: "Vote was recorded on blockchain but failed to save locally. Your vote is still valid.",
             variant: "destructive",
           });
         }
@@ -127,33 +119,34 @@ export const BallotCard = ({ position, candidates, electionId }: BallotCardProps
       if (insertedVote) {
         toast({
           title: "Vote Cast Successfully",
-          description: "Your vote has been securely recorded and verified.",
+          description: "Your vote has been securely recorded on the blockchain and verified.",
         });
         
         navigate("/vote-confirmation", { 
           state: { 
             verificationCode: insertedVote.verification_code,
-            blockchainHash: blockchainVote.transactionHash || blockchainVote.voteHash,
+            blockchainHash: blockchainVote.transactionHash,
             blockNumber: blockchainVote.blockNumber
           } 
         });
       }
 
     } catch (err: any) {
-      console.error("Error casting vote:", err);
+      console.error("Unexpected error casting vote:", err);
       
-      let errorMessage = "An unexpected error occurred. Please try again.";
-      if (err.message.includes('already voted') || err.message.includes('Already voted')) {
-        errorMessage = "You have already voted in this election.";
-      } else if (err.message.includes('not initialized')) {
-        errorMessage = "Voting system not ready. Please refresh the page and try again.";
+      if (err.message.includes('Blockchain')) {
+        toast({
+          title: "Blockchain Error",
+          description: "Failed to record vote on blockchain. Please try again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Vote Casting Failed",
+          description: "An unexpected error occurred. Please try again.",
+          variant: "destructive",
+        });
       }
-      
-      toast({
-        title: "Vote Casting Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
     } finally {
       setIsSubmitting(false);
     }
@@ -200,7 +193,7 @@ export const BallotCard = ({ position, candidates, electionId }: BallotCardProps
           <Alert className="mt-2 bg-green-50 border-green-200">
             <ShieldCheckIcon className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-700">
-              Blockchain wallet connected - votes will be recorded securely
+              Blockchain wallet connected - votes will be recorded securely on the blockchain
             </AlertDescription>
           </Alert>
         )}
@@ -228,11 +221,11 @@ export const BallotCard = ({ position, candidates, electionId }: BallotCardProps
         </RadioGroup>
 
         <div className="mt-8">
-          {!isConnected && !import.meta.env.PROD && (
+          {!isConnected && (
             <Alert className="mb-4">
               <AlertTriangleIcon className="h-4 w-4" />
               <AlertDescription>
-                Development mode: You can vote without connecting a wallet for testing purposes.
+                Connect your blockchain wallet to cast votes securely on the decentralized ledger.
               </AlertDescription>
             </Alert>
           )}
@@ -245,12 +238,12 @@ export const BallotCard = ({ position, candidates, electionId }: BallotCardProps
             {isSubmitting ? (
               <>
                 <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                Recording Vote...
+                Recording on Blockchain...
               </>
             ) : (
               <>
                 <ShieldCheckIcon className="mr-2 h-4 w-4" />
-                Cast Vote Securely
+                {isConnected ? "Cast Vote on Blockchain" : "Connect Wallet to Vote"}
               </>
             )}
           </Button>
