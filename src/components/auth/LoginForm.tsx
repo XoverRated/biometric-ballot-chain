@@ -22,9 +22,10 @@ export const LoginForm = () => {
     
     try {
       await signIn(email, password);
-      // If successful, navigate to face authentication instead of biometric verification
-      navigate("/face-auth");
+      // If successful, navigate to biometric verification
+      navigate("/biometric-auth");
     } catch (error) {
+      // Error is already handled in the auth context
       console.error("Login error:", error);
     } finally {
       setIsLoading(false);
@@ -32,6 +33,7 @@ export const LoginForm = () => {
   };
 
   const handleRegisterClick = () => {
+    // Find the register tab and switch to it
     const registerTab = document.querySelector('[data-value="register"]') as HTMLElement;
     if (registerTab) {
       registerTab.click();

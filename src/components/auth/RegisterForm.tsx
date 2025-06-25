@@ -1,11 +1,10 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { Loader2Icon, UserPlus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 export const RegisterForm = () => {
   const [email, setEmail] = useState("");
@@ -13,7 +12,7 @@ export const RegisterForm = () => {
   const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { signUp } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // Initialize useNavigate
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,9 +20,11 @@ export const RegisterForm = () => {
     
     try {
       await signUp(email, password, fullName);
-      // After registration, navigate to face registration instead of biometric registration
-      navigate("/face-register"); 
+      // Registration success is handled in the auth context (toast)
+      // After registration, navigate to biometric registration
+      navigate("/biometric-register"); 
     } catch (error) {
+      // Error is already handled in the auth context
       console.error("Registration error:", error);
     } finally {
       setIsLoading(false);
@@ -31,6 +32,7 @@ export const RegisterForm = () => {
   };
 
   const handleLoginClick = () => {
+    // Find the login tab and switch to it
     const loginTab = document.querySelector('[data-value="login"]') as HTMLElement;
     if (loginTab) {
       loginTab.click();

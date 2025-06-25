@@ -6,7 +6,7 @@ export const Footer = () => {
   return (
     <footer className="bg-vote-blue text-white pt-12 pb-6">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Logo and tagline */}
           <div className="col-span-1 md:col-span-1">
             <div className="flex items-center space-x-2 mb-4">
@@ -58,6 +58,33 @@ export const Footer = () => {
               <li>
                 <Link to="/about-us" className="text-gray-300 hover:text-white transition-colors">
                   About Us
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Resources */}
+          <div className="col-span-1">
+            <h3 className="text-lg font-semibold mb-4">Resources</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/faq" className="text-gray-300 hover:text-white transition-colors">
+                  FAQ
+                </Link>
+              </li>
+              <li>
+                <Link to="/privacy" className="text-gray-300 hover:text-white transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/terms" className="text-gray-300 hover:text-white transition-colors">
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link to="/security" className="text-gray-300 hover:text-white transition-colors">
+                  Security
                 </Link>
               </li>
             </ul>

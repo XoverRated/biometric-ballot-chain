@@ -2,12 +2,12 @@
 import { MainLayout } from "@/components/layout/MainLayout";
 import { BallotCard } from "@/components/elections/BallotCard";
 import { Link, useParams } from "react-router-dom";
-import { CalendarIcon, ChevronLeftIcon, AlertTriangleIcon, InfoIcon } from "lucide-react";
+import { CalendarIcon, ClockIcon, ChevronLeftIcon, AlertTriangleIcon, InfoIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PollStation } from "@/components/elections/PollStation";
 
 interface CandidateMock {
-  id: string;
+  id: string; // Will now be a UUID
   name: string;
   party: string;
 }
@@ -21,6 +21,7 @@ interface ElectionMock {
   date: string;
   description: string;
   status: "Active" | "Upcoming" | "Completed";
+  timeRemaining?: string;
   location: string;
   positions: PositionMock[];
   dbElectionId: string; 
@@ -34,6 +35,7 @@ const MOCK_ELECTIONS: ElectionMock[] = [
     date: "May 15, 2025",
     description: "Vote for COICT Ex-COM representatives for the upcoming term.",
     status: "Active",
+    timeRemaining: "1 day 4 hours",
     location: "All City Districts",
     positions: [
       {
@@ -53,6 +55,7 @@ const MOCK_ELECTIONS: ElectionMock[] = [
     date: "May 18, 2025",
     description: "Special election for UDSM-COICT Foreign Ambassador positions.",
     status: "Active",
+    timeRemaining: "4 days 12 hours",
     location: "District 5",
     positions: [
       {
@@ -72,6 +75,7 @@ const MOCK_ELECTIONS: ElectionMock[] = [
     date: "June 5, 2025",
     description: "Primary election for state senate candidates.",
     status: "Upcoming",
+    timeRemaining: "23 days 8 hours",
     location: "State District 12",
     positions: [
       {
@@ -130,6 +134,15 @@ const ElectionDetailPage = () => {
               <CalendarIcon className="h-5 w-5 text-vote-teal mr-3" />
               <span>Date: <strong>{election.date}</strong></span>
             </div>
+            {election.timeRemaining && (
+              <div className="flex items-center">
+                <ClockIcon className="h-5 w-5 text-vote-teal mr-3" />
+                <span>
+                  {election.status === "Active" ? "Closes in: " : "Opens in: "}
+                  <strong>{election.timeRemaining}</strong>
+                </span>
+              </div>
+            )}
           </div>
           
           {election.status === "Active" && (

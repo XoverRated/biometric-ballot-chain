@@ -3,10 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import Index from "@/pages/Index";
 import AuthPage from "@/pages/AuthPage";
-import FaceAuthPage from "@/pages/FaceAuthPage";
-import FaceRegisterPage from "@/pages/FaceRegisterPage";
-import EnhancedBiometricAuthPage from "@/pages/EnhancedBiometricAuthPage";
-import EnhancedBiometricRegisterPage from "@/pages/EnhancedBiometricRegisterPage";
+import BiometricAuthPage from "@/pages/BiometricAuthPage";
+import BiometricRegisterPage from "@/pages/BiometricRegisterPage";
 import ElectionsPage from "@/pages/ElectionsPage";
 import ElectionDetailPage from "@/pages/ElectionDetailPage";
 import VoteConfirmationPage from "@/pages/VoteConfirmationPage";
@@ -20,54 +18,46 @@ import ContactPage from "@/pages/ContactPage";
 import ProfilePage from "@/pages/ProfilePage";
 import SettingsPage from "@/pages/SettingsPage";
 import AboutUsPage from "@/pages/AboutUsPage";
-import AdminDashboardPage from "@/pages/AdminDashboardPage";
+import AdminDashboardPage from "@/pages/AdminDashboardPage"; // New
 import NotFound from "@/pages/NotFound";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { Web3Provider } from "@/contexts/Web3Context";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { AdminRoute } from "@/components/auth/AdminRoute";
-import { BiometricProtectedRoute } from "@/components/auth/BiometricProtectedRoute";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute"; // Assuming you have this
+import { AdminRoute } from "@/components/auth/AdminRoute"; // New
 
 const App = () => {
   return (
     <AuthProvider>
-      <Web3Provider>
-        <Router>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<AuthPage />} />
-            
-            <Route path="/face-auth" element={<ProtectedRoute><FaceAuthPage /></ProtectedRoute>} />
-            <Route path="/face-register" element={<ProtectedRoute><FaceRegisterPage /></ProtectedRoute>} />
-            
-            {/* Enhanced Biometric Routes */}
-            <Route path="/enhanced-biometric-auth" element={<ProtectedRoute><EnhancedBiometricAuthPage /></ProtectedRoute>} />
-            <Route path="/enhanced-biometric-register" element={<ProtectedRoute><EnhancedBiometricRegisterPage /></ProtectedRoute>} />
-            
-            <Route path="/elections" element={<BiometricProtectedRoute><ElectionsPage /></BiometricProtectedRoute>} />
-            <Route path="/elections/:id" element={<BiometricProtectedRoute><ElectionDetailPage /></BiometricProtectedRoute>} />
-            <Route path="/vote-confirmation" element={<BiometricProtectedRoute><VoteConfirmationPage /></BiometricProtectedRoute>} />
-            <Route path="/verify" element={<BiometricProtectedRoute><VerifyPage /></BiometricProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+      <Router>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<AuthPage />} />
+          
+          <Route path="/biometric-auth" element={<ProtectedRoute><BiometricAuthPage /></ProtectedRoute>} />
+          <Route path="/biometric-register" element={<ProtectedRoute><BiometricRegisterPage /></ProtectedRoute>} />
+          <Route path="/elections" element={<ProtectedRoute><ElectionsPage /></ProtectedRoute>} />
+          <Route path="/elections/:id" element={<ProtectedRoute><ElectionDetailPage /></ProtectedRoute>} />
+          <Route path="/vote-confirmation" element={<ProtectedRoute><VoteConfirmationPage /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 
-            {/* Admin Route */}
-            <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
+          {/* Admin Route */}
+          <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
 
-            <Route path="/how-it-works" element={<HowItWorksPage />} />
-            <Route path="/faq" element={<FAQPage />} />
-            <Route path="/privacy" element={<PrivacyPolicyPage />} />
-            <Route path="/terms" element={<TermsOfServicePage />} />
-            <Route path="/security" element={<SecurityInfoPage />} />
-            <Route path="/contact" element={<ContactPage />} />
-            <Route path="/about-us" element={<AboutUsPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <Toaster />
-        </Router>
-      </Web3Provider>
+          <Route path="/verify" element={<VerifyPage />} />
+          <Route path="/how-it-works" element={<HowItWorksPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsOfServicePage />} />
+          <Route path="/security" element={<SecurityInfoPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/about-us" element={<AboutUsPage />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Toaster />
+      </Router>
     </AuthProvider>
   );
 };
 
 export default App;
+
