@@ -6,7 +6,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBiometricCamera } from "@/hooks/biometric/useBiometricCamera";
 import { useBiometricAuth } from "@/hooks/biometric/useBiometricAuth";
 import { Camera, Eye, Shield, Zap } from "lucide-react";
-import { logger } from "@/utils/logger";
 
 export const useEnhancedBiometricAuth = () => {
   const navigate = useNavigate();
@@ -37,7 +36,6 @@ export const useEnhancedBiometricAuth = () => {
 
   // Initialize security checks
   useEffect(() => {
-    logger.debug('EnhancedBiometricAuth', 'Initializing security checks');
     setSecurityChecks([
       {
         name: 'Liveness Detection',
@@ -67,29 +65,14 @@ export const useEnhancedBiometricAuth = () => {
   }, [setSecurityChecks]);
 
   const handleEnhancedAuthenticate = async () => {
-    logger.info('EnhancedBiometricAuth', 'Starting enhanced authentication process', {
-      userId: user?.id,
-      faceDetected,
-      cameraError
-    });
-
     try {
       await performAuth();
-      logger.info('EnhancedBiometricAuth', 'Enhanced authentication successful, redirecting');
-      
       setTimeout(() => {
         cleanup();
         navigate("/elections");
       }, 2000);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Enhanced authentication failed';
-      
-      logger.error('EnhancedBiometricAuth', 'Enhanced authentication failed', err instanceof Error ? err : new Error(errorMessage), {
-        userId: user?.id,
-        faceDetected,
-        authProgress
-      });
-
       toast({
         title: "Enhanced Authentication Failed",
         description: errorMessage,
@@ -99,13 +82,7 @@ export const useEnhancedBiometricAuth = () => {
   };
 
   useEffect(() => {
-    logger.info('EnhancedBiometricAuth', 'Component initialized', {
-      hasUser: !!user,
-      userId: user?.id
-    });
-
     if (!user) {
-      logger.warn('EnhancedBiometricAuth', 'No authenticated user found, redirecting to auth');
       toast({ title: "User not authenticated", description: "Please sign in.", variant: "destructive" });
       navigate("/auth");
       return;
@@ -113,11 +90,6 @@ export const useEnhancedBiometricAuth = () => {
 
     const registeredFaceEmbedding = user.user_metadata?.face_embedding;
     if (!registeredFaceEmbedding) {
-      logger.warn('EnhancedBiometricAuth', 'No face embedding found for user, redirecting to registration', {
-        userId: user.id,
-        hasUserMetadata: !!user.user_metadata
-      });
-      
       toast({
         title: "No Face Data Found",
         description: "Please register your face first.",
@@ -128,20 +100,15 @@ export const useEnhancedBiometricAuth = () => {
     }
     
     const init = async () => {
-      logger.debug('EnhancedBiometricAuth', 'Initializing camera and face detection');
       const success = await initializeCamera();
       if (success) {
         startFaceDetection();
-        logger.info('EnhancedBiometricAuth', 'Camera and face detection initialized successfully');
-      } else {
-        logger.error('EnhancedBiometricAuth', 'Failed to initialize camera');
       }
     };
     
     init();
     
     return () => {
-      logger.debug('EnhancedBiometricAuth', 'Component cleanup');
       cleanup();
     };
   }, [user]);

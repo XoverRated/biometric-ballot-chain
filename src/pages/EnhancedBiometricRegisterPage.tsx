@@ -1,15 +1,9 @@
+
 import { MainLayout } from "@/components/layout/MainLayout";
-import { LazyEnhancedBiometricRegister } from "@/components/common/LazyComponent";
+import { EnhancedBiometricRegister } from "@/components/auth/EnhancedBiometricRegister";
 import { Shield, Brain, Layers } from "lucide-react";
-import { useEffect } from "react";
-import { preloadTensorFlow } from "@/utils/lazyTensorFlow";
 
 const EnhancedBiometricRegisterPage = () => {
-  useEffect(() => {
-    // Preload TensorFlow.js when the page loads
-    preloadTensorFlow();
-  }, []);
-
   return (
     <MainLayout>
       <div className="max-w-6xl mx-auto">
@@ -84,7 +78,7 @@ const EnhancedBiometricRegisterPage = () => {
           </div>
           
           <div className="md:col-span-3 order-1 md:order-2 flex justify-center">
-            <LazyEnhancedBiometricRegister />
+            <EnhancedBiometricRegister />
           </div>
         </div>
       </div>

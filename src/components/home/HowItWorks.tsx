@@ -9,12 +9,12 @@ export const HowItWorks = () => {
     {
       number: 1,
       title: "Register & Verify Identity",
-      description: "Create an account and complete identity verification with your facial recognition data.",
+      description: "Create an account and complete identity verification with your biometric data.",
     },
     {
       number: 2,
       title: "Access Ballot",
-      description: "Sign in with your facial recognition to access the secure ballot for your eligible elections.",
+      description: "Sign in with your biometric data to access the secure ballot for your eligible elections.",
     },
     {
       number: 3,

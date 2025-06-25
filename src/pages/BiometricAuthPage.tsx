@@ -8,18 +8,18 @@ const BiometricAuthPage = () => {
     <MainLayout>
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-vote-blue">Facial Recognition Verification</h1>
+          <h1 className="text-3xl font-bold text-vote-blue">Biometric Verification</h1>
           <p className="text-gray-600 mt-2">
-            Complete the facial recognition verification to access your ballot
+            Complete the biometric verification to access your ballot
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-8 items-center">
           <div className="md:col-span-2 order-2 md:order-1">
             <div className="bg-vote-light p-6 rounded-xl">
-              <h2 className="text-xl font-bold text-vote-blue mb-4">Why Facial Recognition Verification?</h2>
+              <h2 className="text-xl font-bold text-vote-blue mb-4">Why Biometric Verification?</h2>
               <p className="text-gray-600 mb-4">
-                Facial recognition verification ensures that only you can cast your vote, 
+                Biometric verification ensures that only you can cast your vote, 
                 preventing fraud and maintaining the integrity of the election.
               </p>
               
@@ -32,7 +32,7 @@ const BiometricAuthPage = () => {
                   <li>• Prevents impersonation and voter fraud</li>
                   <li>• Creates a non-transferable identity verification</li>
                   <li>• Ensures one-person-one-vote integrity</li>
-                  <li>• Facial data processed locally on your device</li>
+                  <li>• Biometric data never leaves your device</li>
                 </ul>
               </div>
             </div>

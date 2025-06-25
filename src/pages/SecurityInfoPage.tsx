@@ -1,12 +1,12 @@
 
 import { MainLayout } from "@/components/layout/MainLayout";
-import { ShieldCheckIcon, LockKeyholeIcon, ScanFaceIcon } from "lucide-react";
+import { ShieldCheckIcon, LockKeyholeIcon, FingerprintIcon } from "lucide-react";
 
 const securityFeatures = [
   {
-    icon: ScanFaceIcon,
-    title: "Facial Recognition Authentication",
-    description: "Utilizes advanced facial recognition technology for secure login and vote casting, ensuring only you can access your ballot."
+    icon: FingerprintIcon,
+    title: "Biometric Authentication",
+    description: "Utilizes your unique fingerprint for secure login and vote casting, ensuring only you can access your ballot."
   },
   {
     icon: LockKeyholeIcon,
