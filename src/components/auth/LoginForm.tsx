@@ -22,8 +22,8 @@ export const LoginForm = () => {
     
     try {
       await signIn(email, password);
-      // Navigate to fingerprint authentication after successful login
-      navigate("/fingerprint-auth");
+      // Navigate to FaceIO authentication after successful login
+      navigate("/faceio-auth");
     } catch (error) {
       console.error("Login error:", error);
     } finally {

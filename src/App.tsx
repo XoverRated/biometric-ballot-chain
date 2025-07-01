@@ -19,6 +19,8 @@ import FingerprintAuthPage from './pages/FingerprintAuthPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import ElectionResultsPage from './pages/ElectionResultsPage';
+import FaceIORegisterPage from './pages/FaceIORegisterPage';
+import FaceIOAuthPage from './pages/FaceIOAuthPage';
 import { SkipLink } from './components/common/SkipLink';
 
 function App() {
@@ -41,6 +43,10 @@ function App() {
               {/* Fingerprint authentication routes */}
               <Route path="/fingerprint-register" element={<FingerprintRegisterPage />} />
               <Route path="/fingerprint-auth" element={<FingerprintAuthPage />} />
+              
+              {/* FaceIO authentication routes */}
+              <Route path="/faceio-register" element={<FaceIORegisterPage />} />
+              <Route path="/faceio-auth" element={<FaceIOAuthPage />} />
               
               {/* Protected routes */}
               <Route path="/elections" element={<ProtectedRoute><ElectionsPage /></ProtectedRoute>} />
