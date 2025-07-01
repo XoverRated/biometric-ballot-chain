@@ -5,8 +5,8 @@ class FaceIOService {
   private readonly appPublicId: string;
 
   constructor() {
-    // You need to get your FaceIO App Public ID from https://console.faceio.net/
-    this.appPublicId = 'YOUR_FACEIO_APP_PUBLIC_ID';
+    // Replace with your actual FaceIO App Public ID from https://console.faceio.net/
+    this.appPublicId = 'fioa1f2f-f624-4fd8-9695-d9b74d52cd2f';
   }
 
   private waitForFaceIO(): Promise<void> {
@@ -17,7 +17,7 @@ class FaceIOService {
       }
 
       let attempts = 0;
-      const maxAttempts = 50;
+      const maxAttempts = 100;
       
       const checkForFaceIO = () => {
         attempts++;
@@ -123,7 +123,7 @@ class FaceIOService {
   }
 
   isConfigured(): boolean {
-    return this.appPublicId !== 'YOUR_FACEIO_APP_PUBLIC_ID';
+    return this.appPublicId !== 'YOUR_FACEIO_APP_PUBLIC_ID' && this.appPublicId.length > 0;
   }
 }
 
