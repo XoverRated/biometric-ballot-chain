@@ -20,23 +20,20 @@ export const useFaceRegistration = () => {
   const streamRef = useRef<MediaStream | null>(null);
   const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isActiveRef = useRef(true);
-  const initializationPromiseRef = useRef<Promise<void> | null>(null);
   
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const cleanup = useCallback(() => {
-    console.log('Cleaning up face registration...');
-    isActiveRef.current = false;
-    
-    // Clear detection interval
+  const stopFaceDetection = useCallback(() => {
     if (detectionIntervalRef.current) {
       clearInterval(detectionIntervalRef.current);
       detectionIntervalRef.current = null;
+      console.log('Face detection stopped');
     }
-    
-    // Stop camera stream
+  }, []);
+
+  const stopCameraStream = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => {
         track.stop();
@@ -45,109 +42,30 @@ export const useFaceRegistration = () => {
       streamRef.current = null;
     }
     
-    // Clear video element
     if (videoRef.current) {
       videoRef.current.srcObject = null;
       videoRef.current.pause();
     }
+  }, []);
+
+  const cleanup = useCallback(() => {
+    console.log('Starting cleanup...');
+    isActiveRef.current = false;
     
-    // Cleanup face recognition service
+    stopFaceDetection();
+    stopCameraStream();
+    
+    setFaceDetected(false);
+    setQualityScore(0);
+    
     try {
       enhancedFaceRecognitionService.cleanup();
     } catch (err) {
       console.warn('Face recognition service cleanup error:', err);
     }
     
-    // Reset states
-    setFaceDetected(false);
-    setQualityScore(0);
-    
     console.log('Cleanup completed');
-  }, []);
-
-  const startCamera = useCallback(async (): Promise<void> => {
-    console.log('Starting camera...');
-    
-    if (!videoRef.current || !isActiveRef.current) {
-      throw new Error('Video element not available');
-    }
-
-    try {
-      // Request camera access with specific constraints
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 640, min: 480, max: 1280 },
-          height: { ideal: 480, min: 360, max: 720 },
-          facingMode: 'user',
-          frameRate: { ideal: 30, min: 15, max: 30 }
-        },
-        audio: false
-      });
-
-      if (!isActiveRef.current) {
-        stream.getTracks().forEach(track => track.stop());
-        throw new Error('Initialization cancelled');
-      }
-
-      console.log('Camera stream obtained');
-      streamRef.current = stream;
-      
-      const video = videoRef.current;
-      if (!video) {
-        throw new Error('Video element lost during initialization');
-      }
-
-      // Set up video element
-      video.srcObject = stream;
-      video.autoplay = true;
-      video.muted = true;
-      video.playsInline = true;
-
-      // Wait for video to load and start playing
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Video load timeout'));
-        }, 10000);
-
-        const handleLoadedMetadata = () => {
-          console.log('Video metadata loaded');
-          video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-          video.removeEventListener('error', handleError);
-          clearTimeout(timeout);
-          
-          // Start playing the video
-          video.play()
-            .then(() => {
-              console.log('Video playback started');
-              resolve();
-            })
-            .catch(reject);
-        };
-
-        const handleError = (e: Event) => {
-          video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-          video.removeEventListener('error', handleError);
-          clearTimeout(timeout);
-          reject(new Error('Video load error'));
-        };
-
-        video.addEventListener('loadedmetadata', handleLoadedMetadata);
-        video.addEventListener('error', handleError);
-      });
-
-      console.log('Camera initialized successfully');
-    } catch (err) {
-      console.error('Camera initialization failed:', err);
-      
-      // Clean up any partial setup
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-        streamRef.current = null;
-      }
-      
-      throw err;
-    }
-  }, []);
+  }, [stopFaceDetection, stopCameraStream]);
 
   const startFaceDetection = useCallback(async () => {
     if (!videoRef.current || !isActiveRef.current) {
@@ -173,84 +91,151 @@ export const useFaceRegistration = () => {
       }
     };
 
-    // Start detection immediately
+    // Start detection immediately, then set interval
     await detectFaces();
     
-    // Set up interval for continuous detection
     if (isActiveRef.current) {
       detectionIntervalRef.current = setInterval(detectFaces, 1000);
     }
   }, [isCapturing]);
 
-  const initialize = useCallback(async () => {
-    // Prevent multiple simultaneous initializations
-    if (initializationPromiseRef.current) {
-      return initializationPromiseRef.current;
-    }
+  const initializeCamera = useCallback(async () => {
+    if (!isActiveRef.current) return;
+    
+    console.log('Initializing camera...');
+    
+    try {
+      // Request camera stream
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 640, min: 320 },
+          height: { ideal: 480, min: 240 },
+          facingMode: 'user',
+          frameRate: { ideal: 15, max: 30 }
+        }
+      });
 
-    const initPromise = async () => {
-      if (!user || !isActiveRef.current) {
+      if (!isActiveRef.current) {
+        stream.getTracks().forEach(track => track.stop());
         return;
       }
 
-      console.log('Starting face registration initialization...');
-      setIsInitializing(true);
-      setError(null);
-
-      try {
-        // Step 1: Initialize face recognition service
-        console.log('Initializing face recognition service...');
-        await enhancedFaceRecognitionService.initialize();
+      streamRef.current = stream;
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
         
-        if (!isActiveRef.current) return;
-
-        // Step 2: Start camera
-        console.log('Starting camera...');
-        await startCamera();
-        
-        if (!isActiveRef.current) return;
-
-        // Step 3: Wait for video to stabilize
-        console.log('Waiting for video stabilization...');
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        if (!isActiveRef.current) return;
-
-        // Step 4: Start face detection
-        console.log('Starting face detection...');
-        await startFaceDetection();
-        
-        if (isActiveRef.current) {
-          setIsInitializing(false);
-          console.log('Face registration initialization completed successfully');
-        }
-
-      } catch (err) {
-        console.error('Face registration initialization failed:', err);
-        
-        if (!isActiveRef.current) return;
-
-        let errorMessage = 'Failed to initialize face registration';
-        if (err instanceof Error) {
-          if (err.name === 'NotAllowedError') {
-            errorMessage = 'Camera access denied. Please allow camera permissions and refresh the page.';
-          } else if (err.name === 'NotFoundError') {
-            errorMessage = 'No camera found. Please connect a camera and try again.';
-          } else if (err.name === 'NotReadableError') {
-            errorMessage = 'Camera is being used by another application. Please close other apps and try again.';
-          } else {
-            errorMessage = err.message;
+        // Wait for video to be ready
+        return new Promise<void>((resolve, reject) => {
+          if (!videoRef.current || !isActiveRef.current) {
+            reject(new Error('Video element not available'));
+            return;
           }
-        }
-        
-        setError(errorMessage);
-        setIsInitializing(false);
-      }
-    };
 
-    initializationPromiseRef.current = initPromise();
-    return initializationPromiseRef.current;
-  }, [user, startCamera, startFaceDetection]);
+          const video = videoRef.current;
+          
+          const onLoadedMetadata = () => {
+            video.removeEventListener('loadedmetadata', onLoadedMetadata);
+            video.removeEventListener('error', onError);
+            
+            if (isActiveRef.current) {
+              console.log('Video metadata loaded, starting playback...');
+              video.play()
+                .then(() => {
+                  console.log('Video playback started successfully');
+                  resolve();
+                })
+                .catch(reject);
+            }
+          };
+
+          const onError = (e: Event) => {
+            video.removeEventListener('loadedmetadata', onLoadedMetadata);
+            video.removeEventListener('error', onError);
+            reject(new Error('Video load error'));
+          };
+
+          video.addEventListener('loadedmetadata', onLoadedMetadata);
+          video.addEventListener('error', onError);
+          
+          // Set properties
+          video.muted = true;
+          video.playsInline = true;
+          video.autoplay = true;
+        });
+      }
+    } catch (err) {
+      console.error('Camera initialization failed:', err);
+      throw err;
+    }
+  }, []);
+
+  const initializeFaceRecognition = useCallback(async () => {
+    if (!isActiveRef.current) return;
+    
+    console.log('Initializing face recognition service...');
+    
+    try {
+      await enhancedFaceRecognitionService.initialize();
+      console.log('Face recognition service initialized');
+    } catch (err) {
+      console.error('Face recognition initialization failed:', err);
+      throw err;
+    }
+  }, []);
+
+  const initialize = useCallback(async () => {
+    if (!user || !isActiveRef.current) {
+      return;
+    }
+
+    console.log('Starting initialization sequence...');
+    setIsInitializing(true);
+    setError(null);
+
+    try {
+      // Step 1: Initialize face recognition service
+      await initializeFaceRecognition();
+      
+      if (!isActiveRef.current) return;
+
+      // Step 2: Initialize camera
+      await initializeCamera();
+      
+      if (!isActiveRef.current) return;
+
+      // Step 3: Wait a moment for video to stabilize
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      if (!isActiveRef.current) return;
+
+      // Step 4: Start face detection
+      await startFaceDetection();
+      
+      if (isActiveRef.current) {
+        setIsInitializing(false);
+        console.log('Initialization completed successfully');
+      }
+    } catch (err) {
+      console.error('Initialization failed:', err);
+      
+      if (!isActiveRef.current) return;
+
+      let errorMessage = 'Failed to initialize camera';
+      if (err instanceof Error) {
+        if (err.name === 'NotAllowedError') {
+          errorMessage = 'Camera access denied. Please allow camera permissions and refresh the page.';
+        } else if (err.name === 'NotFoundError') {
+          errorMessage = 'No camera found. Please connect a camera and try again.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
+      setError(errorMessage);
+      setIsInitializing(false);
+    }
+  }, [user, initializeFaceRecognition, initializeCamera, startFaceDetection]);
 
   const averageEmbeddings = (embeddings: number[][]): number[] => {
     if (embeddings.length === 0) return [];
@@ -272,16 +257,13 @@ export const useFaceRegistration = () => {
       return;
     }
 
-    console.log('Starting face registration process...');
+    console.log('Starting face registration...');
     setIsCapturing(true);
     setCaptureProgress(0);
     setError(null);
     
     // Stop face detection during capture
-    if (detectionIntervalRef.current) {
-      clearInterval(detectionIntervalRef.current);
-      detectionIntervalRef.current = null;
-    }
+    stopFaceDetection();
 
     try {
       const faceEmbeddings: number[][] = [];
@@ -374,16 +356,13 @@ export const useFaceRegistration = () => {
   };
 
   const handleRetry = () => {
-    console.log('Retrying face registration initialization...');
+    console.log('Retrying initialization...');
     setError(null);
     setIsCapturing(false);
     setCaptureProgress(0);
     setRegistrationComplete(false);
     setFaceDetected(false);
     setQualityScore(0);
-    
-    // Clear initialization promise to allow retry
-    initializationPromiseRef.current = null;
     
     cleanup();
     
@@ -401,7 +380,6 @@ export const useFaceRegistration = () => {
     navigate("/elections");
   };
 
-  // Initialize on mount
   useEffect(() => {
     if (!user) {
       toast({ 

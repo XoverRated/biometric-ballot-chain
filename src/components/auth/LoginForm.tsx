@@ -22,8 +22,8 @@ export const LoginForm = () => {
     
     try {
       await signIn(email, password);
-      // Navigate to FaceIO authentication after successful login
-      navigate("/faceio-auth");
+      // If successful, navigate to face authentication instead of biometric verification
+      navigate("/face-auth");
     } catch (error) {
       console.error("Login error:", error);
     } finally {
