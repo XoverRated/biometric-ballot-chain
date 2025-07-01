@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { LogOutIcon, UserIcon, SettingsIcon } from "lucide-react";
+import { LogOutIcon, UserIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "react-router-dom";
 
@@ -50,12 +50,6 @@ export const UserMenu = () => {
           <Link to="/profile" className="w-full flex items-center cursor-pointer">
             <UserIcon className="mr-2 h-4 w-4" />
             <span>Profile</span>
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to="/settings" className="w-full flex items-center cursor-pointer">
-            <SettingsIcon className="mr-2 h-4 w-4" />
-            <span>Settings</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

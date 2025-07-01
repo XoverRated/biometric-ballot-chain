@@ -1,14 +1,14 @@
 
 import { SectionHeading } from "@/components/common/SectionHeading";
 import { FeatureCard } from "@/components/common/FeatureCard";
-import { FingerprintIcon, ShieldCheckIcon, SearchIcon, LockIcon, NetworkIcon, UserCheckIcon } from "lucide-react";
+import { ScanFaceIcon, ShieldCheckIcon, SearchIcon, LockIcon, NetworkIcon, UserCheckIcon } from "lucide-react";
 
 export const Features = () => {
   const features = [
     {
-      icon: FingerprintIcon,
-      title: "Biometric Authentication",
-      description: "Secure voter verification using fingerprint and facial recognition technology.",
+      icon: ScanFaceIcon,
+      title: "Facial Recognition Authentication",
+      description: "Secure voter verification using advanced facial recognition technology.",
     },
     {
       icon: ShieldCheckIcon,
@@ -42,7 +42,7 @@ export const Features = () => {
       <div className="container mx-auto px-4">
         <SectionHeading
           title="Key Features"
-          subtitle="Our platform combines cutting-edge biometric verification with blockchain technology to create a secure and transparent voting experience."
+          subtitle="Our platform combines cutting-edge facial recognition with blockchain technology to create a secure and transparent voting experience."
           centered
         />
         

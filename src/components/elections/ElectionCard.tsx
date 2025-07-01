@@ -1,9 +1,9 @@
 
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { CalendarIcon } from "lucide-react";
 import { Link } from "react-router-dom";
-import { CalendarIcon, ClockIcon, ArrowRightIcon } from "lucide-react";
 
 interface ElectionCardProps {
   id: number;
@@ -11,70 +11,53 @@ interface ElectionCardProps {
   date: string;
   description: string;
   status: "Active" | "Upcoming" | "Completed";
-  timeRemaining?: string;
 }
 
-export const ElectionCard = ({
-  id,
-  title,
-  date,
-  description,
-  status,
-  timeRemaining,
-}: ElectionCardProps) => {
-  const getStatusColor = () => {
+export const ElectionCard = ({ id, title, date, description, status }: ElectionCardProps) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case "Active":
-        return "bg-green-100 text-green-800";
+        return "bg-green-100 text-green-800 border-green-200";
       case "Upcoming":
-        return "bg-blue-100 text-blue-800"; // Kept for potential future use, though not displayed now
+        return "bg-blue-100 text-blue-800 border-blue-200";
       case "Completed":
-        return "bg-gray-100 text-gray-800"; // Kept for potential future use
+        return "bg-gray-100 text-gray-800 border-gray-200";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
   return (
-    <Card className="shadow-md h-full flex flex-col">
-      <CardHeader className="bg-vote-light pb-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <div className="flex items-center gap-2 mb-2 text-sm text-gray-600">
-              <CalendarIcon className="h-4 w-4" />
-              <span>{date}</span>
-            </div>
-            <CardTitle className="text-vote-blue">{title}</CardTitle>
-          </div>
-          <Badge className={getStatusColor()}>{status}</Badge>
+    <Card className="hover:shadow-lg transition-shadow duration-200 border border-gray-200">
+      <CardHeader className="pb-4">
+        <div className="flex justify-between items-start mb-2">
+          <CardTitle className="text-xl font-bold text-vote-blue leading-tight">
+            {title}
+          </CardTitle>
+          <Badge className={`${getStatusColor(status)} font-medium px-3 py-1`}>
+            {status}
+          </Badge>
+        </div>
+        
+        <div className="flex items-center text-gray-600 text-sm">
+          <CalendarIcon className="h-4 w-4 mr-2 text-vote-teal" />
+          <span>{date}</span>
         </div>
       </CardHeader>
-      <CardContent className="pt-6 flex-grow flex flex-col">
-        <p className="text-gray-600 mb-4 flex-grow">{description}</p>
-        {(status === "Active" || status === "Upcoming") && timeRemaining && (
-          <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-            <ClockIcon className="h-4 w-4" />
-            {status === "Active" ? (
-              <span>Closes in: {timeRemaining}</span>
-            ) : (
-              <span>Opens in: {timeRemaining}</span>
-            )}
-          </div>
-        )}
-        <div className="mt-auto">
-          <Link to={`/elections/${id}`}>
-            <Button className="w-full bg-vote-blue hover:bg-vote-teal transition-colors">
-              {status === "Active" ? (
-                "Vote / View Results" // Updated text for Active status
-              ) : status === "Upcoming" ? (
-                "View Details"
-              ) : (
-                "View Results"
-              )}
-              <ArrowRightIcon className="h-4 w-4 ml-2" />
-            </Button>
-          </Link>
-        </div>
+      
+      <CardContent className="pt-0">
+        <p className="text-gray-700 mb-6 leading-relaxed">
+          {description}
+        </p>
+        
+        <Link to={`/election/${id}`} className="flex-1">
+          <Button 
+            className="w-full bg-vote-blue hover:bg-vote-teal transition-colors"
+            disabled={status === "Completed"}
+          >
+            {status === "Active" ? "Vote Now" : status === "Upcoming" ? "View Details" : "View Results"}
+          </Button>
+        </Link>
       </CardContent>
     </Card>
   );

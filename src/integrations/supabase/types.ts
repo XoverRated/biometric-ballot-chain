@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      biometric_templates: {
+        Row: {
+          created_at: string
+          id: string
+          quality_score: number
+          template_data: Json
+          template_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          quality_score?: number
+          template_data: Json
+          template_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          quality_score?: number
+          template_data?: Json
+          template_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       candidates: {
         Row: {
           bio: string | null
@@ -133,7 +163,9 @@ export type Database = {
       }
       votes: {
         Row: {
+          block_number: number | null
           blockchain_hash: string
+          blockchain_timestamp: string | null
           candidate_id: string
           cast_at: string | null
           election_id: string
@@ -142,7 +174,9 @@ export type Database = {
           voter_id: string
         }
         Insert: {
+          block_number?: number | null
           blockchain_hash: string
+          blockchain_timestamp?: string | null
           candidate_id: string
           cast_at?: string | null
           election_id: string
@@ -151,7 +185,9 @@ export type Database = {
           voter_id: string
         }
         Update: {
+          block_number?: number | null
           blockchain_hash?: string
+          blockchain_timestamp?: string | null
           candidate_id?: string
           cast_at?: string | null
           election_id?: string
