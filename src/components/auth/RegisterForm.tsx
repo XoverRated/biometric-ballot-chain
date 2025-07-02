@@ -21,8 +21,8 @@ export const RegisterForm = () => {
     
     try {
       await signUp(email, password, fullName);
-      // After registration, navigate to face registration instead of biometric registration
-      navigate("/face-register"); 
+      // After registration, navigate to FaceIO registration
+      navigate("/faceio-register");
     } catch (error) {
       console.error("Registration error:", error);
     } finally {

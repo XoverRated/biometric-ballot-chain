@@ -16,6 +16,8 @@ import VoteConfirmationPage from './pages/VoteConfirmationPage';
 import ProfilePage from './pages/ProfilePage';
 import BiometricRegisterPage from './pages/BiometricRegisterPage';
 import BiometricAuthPage from './pages/BiometricAuthPage';
+import FaceIORegisterPage from './pages/FaceIORegisterPage';
+import FaceIOAuthPage from './pages/FaceIOAuthPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import EnhancedBiometricRegisterPage from './pages/EnhancedBiometricRegisterPage';
 import EnhancedBiometricAuthPage from './pages/EnhancedBiometricAuthPage';
@@ -45,6 +47,8 @@ function App() {
               {/* Authentication routes */}
               <Route path="/biometric-register" element={<BiometricRegisterPage />} />
               <Route path="/biometric-auth" element={<BiometricAuthPage />} />
+              <Route path="/faceio-register" element={<FaceIORegisterPage />} />
+              <Route path="/faceio-auth" element={<FaceIOAuthPage />} />
               <Route path="/enhanced-biometric-register" element={<EnhancedBiometricRegisterPage />} />
               <Route path="/enhanced-biometric-auth" element={<EnhancedBiometricAuthPage />} />
               <Route path="/face-register" element={<FaceRegisterPage />} />
