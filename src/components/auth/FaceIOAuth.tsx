@@ -38,10 +38,18 @@ export const FaceIOAuth = ({ onSuccess, onFailure }: FaceIOAuthProps = {}) => {
       return;
     }
 
-    // Check if FaceIO is available
-    if (!faceIOService.isConfigured()) {
-      setError("FaceIO service is not available. Please ensure the page has loaded completely and try again.");
-    }
+    // Wait for FaceIO script to load
+    const checkFaceIOLoaded = () => {
+      if (faceIOService.isConfigured()) {
+        setError(null);
+      } else {
+        // Wait a bit more and check again
+        setTimeout(checkFaceIOLoaded, 1000);
+      }
+    };
+
+    // Initial check with a small delay to allow script loading
+    setTimeout(checkFaceIOLoaded, 500);
   }, [user, navigate, toast]);
 
   const handleAuthentication = async () => {
