@@ -1,52 +1,28 @@
 // FaceIO TypeScript definitions
-export interface FaceioInstance {
-  enroll(payload?: { 
+declare class faceIO {
+  constructor(publicKey: string);
+
+  enroll(options?: {
     locale?: string;
-    userConsent?: boolean;
-    enrollIntroTimeout?: number;
-    enrollIllustrationTimeout?: number;
-    realtimeCallbacks?: {
-      onCollected?: () => void;
-      onDetected?: () => void;
-      onQualityEnsured?: () => void;
-      onUploaded?: () => void;
-      onEncrypted?: () => void;
-      onProgress?: (progress: number) => void;
-    };
+    payload?: any;
   }): Promise<{
     facialId: string;
-    timestamp: string;
-    details: {
-      age?: { min: number; max: number };
-      gender?: string;
-      genderConfidence?: number;
-    };
+    details: any;
   }>;
 
-  authenticate(payload?: {
+  authenticate(options?: {
     locale?: string;
-    realtimeCallbacks?: {
-      onCollected?: () => void;
-      onDetected?: () => void;
-      onMatched?: () => void;
-      onProgress?: (progress: number) => void;
-    };
   }): Promise<{
     facialId: string;
-    timestamp: string;
-    details: {
-      age?: { min: number; max: number };
-      gender?: string;
-      genderConfidence?: number;
-    };
+    details: any;
   }>;
 
-  restartSession(): void;
+  restartSession?(): void;
 }
 
 declare global {
   interface Window {
-    faceIO: (publicId: string) => FaceioInstance;
+    faceIO: typeof faceIO;
   }
 }
 

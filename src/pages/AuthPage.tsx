@@ -14,7 +14,13 @@ const AuthPage = () => {
 
   useEffect(() => {
     if (user && !loading) {
-      navigate("/elections");
+      const hasFaceRegistered = localStorage.getItem("faceRegistered") === "true";
+      
+      if (hasFaceRegistered) {
+        navigate("/faceio-auth");
+      } else {
+        navigate("/faceio-register");
+      }
     }
   }, [user, loading, navigate]);
 
