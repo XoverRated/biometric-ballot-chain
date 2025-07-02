@@ -88,35 +88,89 @@ export class RealBlockchainService {
     return ethers.keccak256(ethers.toUtf8Bytes(`${voterId}-${electionId}-${Date.now()}`));
   }
 
+  private async retryOperation<T>(
+    operation: () => Promise<T>,
+    maxRetries: number = 3,
+    retryDelay: number = 1000
+  ): Promise<T> {
+    let lastError: any;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error: any) {
+        lastError = error;
+        
+        // Don't retry for certain error types
+        if (
+          error.code === 'ACTION_REJECTED' ||
+          error.code === 4001 ||
+          error.message.includes('User denied') ||
+          error.message.includes('already voted') ||
+          error.message.includes('not authorized')
+        ) {
+          throw error;
+        }
+        
+        // Only retry on network errors or gas estimation failures
+        const isRetryableError = 
+          error.code === 'NETWORK_ERROR' ||
+          error.code === -32002 ||
+          error.code === 'TIMEOUT' ||
+          error.message.includes('network') ||
+          error.message.includes('timeout') ||
+          error.message.includes('connection');
+        
+        if (!isRetryableError || attempt === maxRetries) {
+          throw error;
+        }
+        
+        console.log(`Retrying operation (attempt ${attempt}/${maxRetries}) after error:`, error.message);
+        await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+      }
+    }
+    
+    throw lastError;
+  }
+
   async castVote(electionId: string, candidateId: string, voterId: string): Promise<RealBlockchainVote> {
     if (!this.contract || !this.signer) {
       throw new Error('Blockchain service not initialized');
     }
 
+    const voterHash = this.generateVoterHash(voterId, electionId);
+
     try {
-      const voterHash = this.generateVoterHash(voterId, electionId);
       
       console.log('Casting real vote on blockchain...', { electionId, candidateId, voterHash });
 
-      // Check if already voted
-      const hasAlreadyVoted = await this.contract.hasVoted(electionId, voterHash);
+      // Check if already voted (with retry for network issues)
+      const hasAlreadyVoted = await this.retryOperation(
+        () => this.contract!.hasVoted(electionId, voterHash)
+      );
       if (hasAlreadyVoted) {
         throw new Error('Voter has already participated in this election');
       }
 
-      // Estimate gas
-      const gasEstimate = await this.contract.castVote.estimateGas(electionId, candidateId, voterHash);
+      // Estimate gas (with retry for network issues)
+      const gasEstimate = await this.retryOperation<bigint>(
+        () => this.contract!.castVote.estimateGas(electionId, candidateId, voterHash)
+      );
       const gasLimit = gasEstimate * BigInt(120) / BigInt(100); // Add 20% buffer
 
-      // Cast vote
+      // Cast vote (don't retry this as it's a state-changing transaction)
       const tx = await this.contract.castVote(electionId, candidateId, voterHash, {
         gasLimit: gasLimit
       });
 
       console.log('Transaction submitted:', tx.hash);
 
-      // Wait for confirmation
-      const receipt = await tx.wait();
+      // Wait for confirmation (with retry for network issues)
+      const receipt = await this.retryOperation<any>(
+        () => tx.wait(),
+        5, // Allow more retries for confirmation
+        2000 // Longer delay between retries
+      );
       console.log('Vote confirmed in block:', receipt.blockNumber);
 
       // Parse the vote hash from events
@@ -151,16 +205,50 @@ export class RealBlockchainService {
 
     } catch (error: any) {
       console.error('Error casting vote on real blockchain:', error);
+      console.error('Error details:', {
+        code: error.code,
+        reason: error.reason,
+        message: error.message,
+        data: error.data,
+        electionId,
+        candidateId,
+        voterHash
+      });
       
+      // Handle specific error codes and types
       if (error.code === 'UNPREDICTABLE_GAS_LIMIT') {
         throw new Error('Transaction would fail - possibly already voted or election inactive');
       } else if (error.code === 'INSUFFICIENT_FUNDS') {
         throw new Error('Insufficient funds to pay for transaction gas');
+      } else if (error.code === 'ACTION_REJECTED' || error.code === 4001) {
+        throw new Error('User denied transaction signature');
+      } else if (error.code === 'NETWORK_ERROR' || error.code === -32002) {
+        throw new Error('Network error - please check your connection and try again');
+      } else if (error.code === 'TIMEOUT') {
+        throw new Error('Transaction timed out - please try again');
       } else if (error.message.includes('revert')) {
-        throw new Error(`Smart contract error: ${error.reason || error.message}`);
+        // Extract revert reason if available
+        const revertReason = error.reason || error.message.match(/revert (.+)/)?.[1] || 'Unknown smart contract error';
+        throw new Error(`Smart contract error: ${revertReason}`);
+      } else if (error.message.includes('already voted')) {
+        throw new Error('You have already voted in this election');
+      } else if (error.message.includes('Election not active')) {
+        throw new Error('This election is not currently active for voting');
+      } else if (error.message.includes('Election not started')) {
+        throw new Error('This election has not started yet');
+      } else if (error.message.includes('Election ended')) {
+        throw new Error('This election has already ended');
+      } else if (error.message.includes('not authorized')) {
+        throw new Error('You are not authorized to vote in this election');
+      } else if (error.message.includes('MetaMask')) {
+        throw new Error('MetaMask error - please check your wallet connection');
+      } else if (error.message.includes('gas')) {
+        throw new Error('Gas estimation failed - the transaction may not succeed');
       }
       
-      throw new Error(`Blockchain transaction failed: ${error.message}`);
+      // For any other error, provide the actual error message if available
+      const errorMessage = error.message || 'Unknown blockchain error occurred';
+      throw new Error(`Blockchain transaction failed: ${errorMessage}`);
     }
   }
 

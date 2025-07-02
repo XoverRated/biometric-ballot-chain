@@ -141,16 +141,59 @@ export const BallotCard = ({ position, candidates, electionId }: BallotCardProps
 
     } catch (err: any) {
       console.error("Error casting vote:", err);
+      console.error("Error details:", {
+        message: err.message,
+        code: err.code,
+        stack: err.stack,
+        electionId,
+        selectedCandidate,
+        userId: user.id
+      });
       
       let errorMessage = "An unexpected error occurred. Please try again.";
+      let title = "Vote Casting Failed";
+      
+      // Handle specific error types with more helpful messages
       if (err.message.includes('already voted') || err.message.includes('Already voted')) {
         errorMessage = "You have already voted in this election.";
+        title = "Already Voted";
       } else if (err.message.includes('not initialized')) {
         errorMessage = "Voting system not ready. Please refresh the page and try again.";
+        title = "System Not Ready";
+      } else if (err.message.includes('Web3 wallet not available')) {
+        errorMessage = "Please install MetaMask or connect your wallet first.";
+        title = "Wallet Required";
+      } else if (err.message.includes('Insufficient funds')) {
+        errorMessage = "Insufficient funds to pay for transaction gas. Please add ETH to your wallet.";
+        title = "Insufficient Funds";
+      } else if (err.message.includes('User denied transaction')) {
+        errorMessage = "Transaction was cancelled. Please try again and approve the transaction.";
+        title = "Transaction Cancelled";
+      } else if (err.message.includes('election inactive') || err.message.includes('Election not active')) {
+        errorMessage = "This election is not currently active for voting.";
+        title = "Election Inactive";
+      } else if (err.message.includes('network') || err.message.includes('Network')) {
+        errorMessage = "Network connection issue. Please check your internet connection and try again.";
+        title = "Network Error";
+      } else if (err.message.includes('Smart contract error')) {
+        errorMessage = `Smart contract error: ${err.message.replace('Smart contract error:', '').trim()}`;
+        title = "Smart Contract Error";
+      } else if (err.code === 'NETWORK_ERROR') {
+        errorMessage = "Network error occurred. Please check your connection and try again.";
+        title = "Network Error";
+      } else if (err.code === 'TIMEOUT') {
+        errorMessage = "Transaction timed out. Please try again.";
+        title = "Transaction Timeout";
+      } else if (err.code === 'UNPREDICTABLE_GAS_LIMIT') {
+        errorMessage = "Transaction would fail. You may have already voted or the election may be inactive.";
+        title = "Transaction Would Fail";
+      } else if (err.message) {
+        // Use the actual error message if it's meaningful
+        errorMessage = err.message;
       }
       
       toast({
-        title: "Vote Casting Failed",
+        title,
         description: errorMessage,
         variant: "destructive",
       });
