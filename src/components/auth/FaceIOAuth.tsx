@@ -39,9 +39,14 @@ export const FaceIOAuth = ({ onSuccess, onFailure }: FaceIOAuthProps = {}) => {
     }
 
     // Check if FaceIO is available
-    if (!faceIOService.isConfigured()) {
-      setError("FaceIO service is not available. Please ensure the page has loaded completely and try again.");
-    }
+    const checkFaceIO = async () => {
+      const isConfigured = await faceIOService.isConfigured();
+      if (!isConfigured) {
+        setError("FaceIO service is not available. Please ensure the page has loaded completely and try again.");
+      }
+    };
+    
+    checkFaceIO();
   }, [user, navigate, toast]);
 
   const handleAuthentication = async () => {
@@ -50,7 +55,8 @@ export const FaceIOAuth = ({ onSuccess, onFailure }: FaceIOAuthProps = {}) => {
       return;
     }
 
-    if (!faceIOService.isConfigured()) {
+    const isConfigured = await faceIOService.isConfigured();
+    if (!isConfigured) {
       setError("FaceIO service is not available.");
       return;
     }
@@ -176,7 +182,7 @@ export const FaceIOAuth = ({ onSuccess, onFailure }: FaceIOAuthProps = {}) => {
       {!authComplete ? (
         <Button
           onClick={handleAuthentication}
-          disabled={isAuthenticating || !faceIOService.isConfigured()}
+          disabled={isAuthenticating}
           className="w-full bg-vote-teal hover:bg-vote-blue transition-colors mb-4"
         >
           {isAuthenticating ? (

@@ -3,32 +3,81 @@ import type { FaceioInstance } from "@/types/faceio";
 class FaceIOService {
   private faceio: FaceioInstance | null = null;
   private readonly APP_PUBLIC_ID = "fioa-74984a42"; // Using the App Public ID from repository examples
+  private initializationPromise: Promise<void> | null = null;
 
   constructor() {
-    this.initializeFaceIO();
+    // Don't initialize immediately, wait for proper timing
   }
 
-  private initializeFaceIO() {
-    if (typeof window !== 'undefined' && window.faceIO) {
+  private async waitForFaceIO(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const maxAttempts = 50; // 5 seconds with 100ms intervals
+      let attempts = 0;
+
+      const checkFaceIO = () => {
+        attempts++;
+        
+        if (typeof window !== 'undefined' && window.faceIO) {
+          resolve();
+        } else if (attempts >= maxAttempts) {
+          reject(new Error('FaceIO script failed to load. Please refresh the page and try again.'));
+        } else {
+          setTimeout(checkFaceIO, 100);
+        }
+      };
+
+      checkFaceIO();
+    });
+  }
+
+  private async initializeFaceIO(): Promise<void> {
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+
+    this.initializationPromise = (async () => {
       try {
-        this.faceio = window.faceIO(this.APP_PUBLIC_ID);
-        console.log('FaceIO initialized successfully');
+        // Wait for FaceIO to be available
+        await this.waitForFaceIO();
+        
+        if (typeof window !== 'undefined' && window.faceIO) {
+          this.faceio = window.faceIO(this.APP_PUBLIC_ID);
+          console.log('FaceIO initialized successfully with App ID:', this.APP_PUBLIC_ID);
+        } else {
+          throw new Error('FaceIO not available after wait');
+        }
       } catch (error) {
         console.error('Failed to initialize FaceIO:', error);
+        this.initializationPromise = null; // Reset to allow retry
+        throw error;
       }
-    }
+    })();
+
+    return this.initializationPromise;
   }
 
-  public isConfigured(): boolean {
-    return this.faceio !== null && typeof window !== 'undefined' && !!window.faceIO;
+  public async isConfigured(): Promise<boolean> {
+    try {
+      if (!this.faceio) {
+        await this.initializeFaceIO();
+      }
+      return this.faceio !== null;
+    } catch (error) {
+      console.error('FaceIO configuration check failed:', error);
+      return false;
+    }
   }
 
   public async enroll(): Promise<{ facialId: string; timestamp: string; details: any }> {
-    if (!this.faceio) {
-      throw new Error('FaceIO is not initialized');
-    }
-
     try {
+      if (!this.faceio) {
+        await this.initializeFaceIO();
+      }
+
+      if (!this.faceio) {
+        throw new Error('FaceIO is not initialized. Please refresh the page and try again.');
+      }
+
       const result = await this.faceio.enroll({
         locale: 'auto',
         userConsent: false,
@@ -64,17 +113,21 @@ class FaceIOService {
         case 40006:
           throw new Error('Face enrollment failed due to duplicate face');
         default:
-          throw new Error(error.message || 'Face enrollment failed');
+          throw new Error(error.message || 'Face enrollment failed. Please try again.');
       }
     }
   }
 
   public async authenticate(): Promise<{ facialId: string; timestamp: string; details: any }> {
-    if (!this.faceio) {
-      throw new Error('FaceIO is not initialized');
-    }
-
     try {
+      if (!this.faceio) {
+        await this.initializeFaceIO();
+      }
+
+      if (!this.faceio) {
+        throw new Error('FaceIO is not initialized. Please refresh the page and try again.');
+      }
+
       const result = await this.faceio.authenticate({
         locale: 'auto',
         realtimeCallbacks: {
@@ -105,7 +158,7 @@ class FaceIOService {
         case 40011:
           throw new Error('Face not recognized. Please ensure you have enrolled first');
         default:
-          throw new Error(error.message || 'Face authentication failed');
+          throw new Error(error.message || 'Face authentication failed. Please try again.');
       }
     }
   }
