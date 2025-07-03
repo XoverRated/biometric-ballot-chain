@@ -25,6 +25,7 @@ import FaceRegisterPage from './pages/FaceRegisterPage';
 import FaceAuthPage from './pages/FaceAuthPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import ElectionResultsPage from './pages/ElectionResultsPage';
+import VerifyPage from './pages/VerifyPage';
 import { SkipLink } from './components/common/SkipLink';
 
 function App() {
@@ -43,6 +44,7 @@ function App() {
               <Route path="/faq" element={<FAQPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/verify" element={<VerifyPage />} />
               
               {/* Authentication routes */}
               <Route path="/biometric-register" element={<BiometricRegisterPage />} />

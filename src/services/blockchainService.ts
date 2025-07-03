@@ -16,9 +16,14 @@ class MockBlockchainService {
       throw new Error('Blockchain service not initialized');
     }
 
+    // Simulate a small delay for realism
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
     // Simulate blockchain transaction
     const mockHash = `0x${Math.random().toString(16).substring(2, 10)}${Math.random().toString(16).substring(2, 10)}`;
-    const mockVoteHash = `0x${Math.random().toString(16).substring(2, 16)}`;
+    const mockVoteHash = `0x${Math.random().toString(16).substring(2, 16)}${Math.random().toString(16).substring(2, 16)}`;
+    
+    console.log('Mock blockchain vote cast:', { electionId, candidateId, voterId });
     
     return {
       electionId,
@@ -50,11 +55,5 @@ class MockBlockchainService {
   }
 }
 
-// Determine which service to use based on environment
-const isProduction = import.meta.env.PROD;
-const hasEthereum = typeof window !== 'undefined' && window.ethereum;
-
-// Use real service in production or when Ethereum is available, otherwise use mock
-export const blockchainService = (isProduction && hasEthereum) 
-  ? realBlockchainService 
-  : new MockBlockchainService();
+// Create a service that works in both development and production
+export const blockchainService = new MockBlockchainService();

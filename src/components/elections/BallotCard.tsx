@@ -29,7 +29,7 @@ interface BallotCardProps {
 export const BallotCard = ({ position, candidates, electionId }: BallotCardProps) => {
   const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showWalletConnect, setShowWalletConnect] = useState(false);
+  
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -45,24 +45,11 @@ export const BallotCard = ({ position, candidates, electionId }: BallotCardProps
         return;
     }
 
-    // For development, allow voting without wallet connection
-    const isDevelopment = !import.meta.env.PROD;
-    if (!isDevelopment && (!isConnected || !signer || !provider)) {
-        setShowWalletConnect(true);
-        return;
-    }
-    
     setIsSubmitting(true);
     
     try {
-      // Initialize blockchain service
-      if (isDevelopment) {
-        // Use mock service for development
-        await blockchainService.initialize(null, null);
-      } else {
-        // Use real blockchain service for production
-        await blockchainService.initialize(provider, signer);
-      }
+      // Initialize blockchain service (using mock for now)
+      await blockchainService.initialize(null, null);
 
       // Check if user has already voted on blockchain
       const hasVotedOnChain = await blockchainService.hasVoted(electionId, user.id);
@@ -159,51 +146,11 @@ export const BallotCard = ({ position, candidates, electionId }: BallotCardProps
     }
   };
 
-  if (showWalletConnect && !isConnected) {
-    return (
-      <Card className="shadow-md mb-8">
-        <CardHeader className="bg-vote-light pb-4">
-          <CardTitle className="text-vote-blue">{position}</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <Alert className="mb-6">
-            <LinkIcon className="h-4 w-4" />
-            <AlertDescription>
-              To cast your vote securely on the blockchain, you need to connect your Web3 wallet first.
-            </AlertDescription>
-          </Alert>
-          
-          <div className="flex justify-center mb-6">
-            <WalletConnect 
-              onConnected={() => setShowWalletConnect(false)}
-              required={true}
-            />
-          </div>
-          
-          <Button 
-            variant="outline"
-            onClick={() => setShowWalletConnect(false)}
-            className="w-full"
-          >
-            Back to Ballot
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card className="shadow-md mb-8">
       <CardHeader className="bg-vote-light pb-4">
         <CardTitle className="text-vote-blue">{position}</CardTitle>
-        {isConnected && (
-          <Alert className="mt-2 bg-green-50 border-green-200">
-            <ShieldCheckIcon className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-700">
-              Blockchain wallet connected - votes will be recorded securely
-            </AlertDescription>
-          </Alert>
-        )}
       </CardHeader>
       <CardContent className="pt-6">
         <RadioGroup 
@@ -228,14 +175,12 @@ export const BallotCard = ({ position, candidates, electionId }: BallotCardProps
         </RadioGroup>
 
         <div className="mt-8">
-          {!isConnected && !import.meta.env.PROD && (
-            <Alert className="mb-4">
-              <AlertTriangleIcon className="h-4 w-4" />
-              <AlertDescription>
-                Development mode: You can vote without connecting a wallet for testing purposes.
-              </AlertDescription>
-            </Alert>
-          )}
+          <Alert className="mb-4">
+            <AlertTriangleIcon className="h-4 w-4" />
+            <AlertDescription>
+              Demo mode: Votes are simulated for testing purposes.
+            </AlertDescription>
+          </Alert>
           
           <Button 
             onClick={handleSubmit} 
