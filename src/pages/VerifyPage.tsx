@@ -1,5 +1,6 @@
-
-import { MainLayout } from "@/components/layout/MainLayout";
+import { x64 } from 'murmurhash3js';
+import { MainLayout } from
+"@/components/layout/MainLayout";
 import { VoteVerifier } from "@/components/verify/VoteVerifier";
 import { SectionHeading } from "@/components/common/SectionHeading";
 import { NetworkIcon } from "lucide-react";
@@ -39,6 +40,15 @@ const VerifyPage = () => {
               </p>
             </div>
           </div>
+{
+const input = vote_id;
+
+
+const fullHash = x64.hash128(input); 
+const truncatedHash = '0x' + fullHash.slice(0, 28);
+
+console.log(truncatedHash); 
+}
           
           <div className="md:col-span-3 order-1 md:order-2">
             <VoteVerifier />
